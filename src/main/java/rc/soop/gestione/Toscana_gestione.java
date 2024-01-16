@@ -997,10 +997,8 @@ public class Toscana_gestione {
 
     public void report_pf() {
         try {
-
             String fileing = "/mnt/mcn/yisu_toscana/estrazioni/Report_ProgettiFormativi_Toscana.xlsx";
             String fileout = "/mnt/mcn/yisu_toscana/estrazioni/Report_ProgettiFormativi_Toscana_" + new DateTime().toString(timestamp) + ".xlsx";
-
             Db_Gest db1 = new Db_Gest(this.host);
 
             try (OutputStream outputStream = new FileOutputStream(new File(fileout)); XSSFWorkbook wb = new XSSFWorkbook(new FileInputStream(new File(fileing)))) {
@@ -1175,8 +1173,6 @@ public class Toscana_gestione {
                 AtomicInteger indiceriga2 = new AtomicInteger(1);
                 try (Statement st0 = db1.getConnection().createStatement(); ResultSet rs0 = st0.executeQuery(sql0_foglio2)) {
                     while (rs0.next()) {
-                        int idsa = rs0.getInt("sa.idsoggetti_attuatori");
-                        
                         String rendicontato = "NO";
                         if (rs0.getInt("pf.extract") != 0) {
                             rendicontato = switch (rs0.getInt("pf.extract")) {
@@ -1212,8 +1208,8 @@ public class Toscana_gestione {
                                 ALLIEVIISCRITTI.addAndGet(1);
                             }
                         }
-                        setCell(getCell(row, 8), String.valueOf(ALLIEVIISCRITTI.get()));
-                        setCell(getCell(row, 9), String.valueOf(ALLIEVIVALIDATI.get()));
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), String.valueOf(ALLIEVIISCRITTI.get()));
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), String.valueOf(ALLIEVIVALIDATI.get()));
                     }
                 }
 

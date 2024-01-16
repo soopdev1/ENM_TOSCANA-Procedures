@@ -56,6 +56,85 @@ public class MainSelector {
 
         Toscana_gestione tg = new Toscana_gestione(testing);
         switch (select_action) {
+            case 2 -> {
+                log.warning("GESTIONE TOSCANA - FAD");
+                try {
+                    tg.fad_gestione();
+                } catch (Exception e) {
+                }
+                break;
+            }
+            case 3 -> {
+                log.warning("GESTIONE TOSCANA - ESTRAZIONI");
+                log.warning("GENERAZIONE FILE REPORT... INIZIO");
+                try {
+                    tg.report_docenti();
+                } catch (Exception e) {
+                }
+                try {
+                    tg.report_allievi();
+                } catch (Exception e) {
+                }
+                try {
+                    tg.report_pf();
+                } catch (Exception e) {
+                }
+                log.warning("GENERAZIONE FILE REPORT... FINE");
+                break;
+            }
+            case 4 -> {
+                log.warning("GESTIONE TOSCANA - REPORT FAD");
+                crearegistri(testing);
+                try {
+                    tg.ore_convalidateAllievi();
+                } catch (Exception e) {
+                }
+                break;
+            }
+            case 5 -> {
+                log.log(Level.WARNING, "ACCREDITAMENTO TOSCANA (testing {0})", testing);
+                Engine accreditamento = new Engine(testing);
+                try {
+                    log.info("START ELENCO DOMANDE");
+                    accreditamento.elenco_domande_fase1();
+                    log.info("FINE ELENCO DOMANDE");
+                } catch (Exception e) {
+                    log.severe(estraiEccezione(e));
+                }
+                try {
+                    log.info("START UPDATE DOMANDE");
+                    accreditamento.update_domande_fase1();
+                    log.info("FINE UPDATE DOMANDE");
+                } catch (Exception e) {
+                    log.severe(estraiEccezione(e));
+                }
+                try {
+                    log.info("START AGGIORNA DATA CONVENZIONE");
+                    accreditamento.aggiorna_dataconvenzione_fase1();
+                    log.info("FINE AGGIORNA DATA CONVENZIONE");
+                } catch (Exception e) {
+                    log.severe(estraiEccezione(e));
+                }
+                try {
+                    log.info("START AGGIORNA REPORTISTICA");
+                    accreditamento.aggiorna_reportistica();
+                    log.info("FINE AGGIORNA REPORTISTICA");
+                } catch (Exception e) {
+                    log.severe(estraiEccezione(e));
+                }
+                try {
+                    log.info("START CREA REPORT");
+                    accreditamento.crea_report();
+                    log.info("FINE CREA REPORT");
+                } catch (Exception e) {
+                    log.severe(estraiEccezione(e));
+                }
+                break;
+            }
+            default -> {
+                break;
+            }
+        }
 //                case 0:
 //                    log.severe("GESTIONE NEET - NESSUN METODO SELEZIONATO");
 //                    break;
@@ -80,82 +159,6 @@ public class MainSelector {
 //                    } catch (Exception e) {
 //                    }
 //                    break;
-            case 2:
-                log.warning("GESTIONE TOSCANA - FAD");
-                try {
-                    tg.fad_gestione();
-                } catch (Exception e) {
-                }
-                break;
-                case 3:
-                    log.warning("GESTIONE TOSCANA - ESTRAZIONI");
-                    log.warning("GENERAZIONE FILE REPORT... INIZIO");
-                    try {
-                        tg.report_docenti();
-                    } catch (Exception e) {
-                    }
-                    try {
-                        tg.report_allievi();
-                    } catch (Exception e) {
-                    }
-                    try {
-                        tg.report_pf();
-                    } catch (Exception e) {
-                    }
-                    log.warning("GENERAZIONE FILE REPORT... FINE");
-                    break;
-            case 4:
-                log.warning("GESTIONE TOSCANA - REPORT FAD");
-                crearegistri(testing);
-                try {
-                    tg.ore_convalidateAllievi();
-                } catch (Exception e) {
-                }
-                break;
-            case 5: {
-                log.log(Level.WARNING, "ACCREDITAMENTO TOSCANA (testing {0})", testing);
-                Engine accreditamento = new Engine(testing);
-
-                try {
-                    log.info("START ELENCO DOMANDE");
-                    accreditamento.elenco_domande_fase1();
-                    log.info("FINE ELENCO DOMANDE");
-                } catch (Exception e) {
-                    log.severe(estraiEccezione(e));
-                }
-
-                try {
-                    log.info("START UPDATE DOMANDE");
-                    accreditamento.update_domande_fase1();
-                    log.info("FINE UPDATE DOMANDE");
-                } catch (Exception e) {
-                    log.severe(estraiEccezione(e));
-                }
-
-                try {
-                    log.info("START AGGIORNA DATA CONVENZIONE");
-                    accreditamento.aggiorna_dataconvenzione_fase1();
-                    log.info("FINE AGGIORNA DATA CONVENZIONE");
-                } catch (Exception e) {
-                    log.severe(estraiEccezione(e));
-                }
-
-                try {
-                    log.info("START AGGIORNA REPORTISTICA");
-                    accreditamento.aggiorna_reportistica();
-                    log.info("FINE AGGIORNA REPORTISTICA");
-                } catch (Exception e) {
-                    log.severe(estraiEccezione(e));
-                }
-                try {
-                    log.info("START CREA REPORT");
-                    accreditamento.crea_report();
-                    log.info("FINE CREA REPORT");
-                } catch (Exception e) {
-                    log.severe(estraiEccezione(e));
-                }
-                break;
-            }
 //                case 6:
 //                    log.warning("REPAIR NEET");
 //                    Repair neetr = new Repair(testing, true);
@@ -190,9 +193,6 @@ public class MainSelector {
 //                } catch (Exception e) {
 //                }
 //                break;
-            default:
-                break;
-        }
     }
 
 }

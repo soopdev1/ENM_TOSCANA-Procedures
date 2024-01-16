@@ -45,7 +45,6 @@ public class Create {
         try {
             FaseA FA = new FaseA(testing);
             Db_Gest db0 = new Db_Gest(FA.getHost());
-//            String sql0 = "SELECT pf.idprogetti_formativi from progetti_formativi pf WHERE stato IN ('ATA','ATB','DVA','DVB')";
 
             String sql0 = "SELECT DISTINCT(mp.id_progettoformativo) "
                     + "FROM lezioni_modelli lm, modelli_progetti mp "
@@ -126,7 +125,8 @@ public class Create {
 //            List<Presenti> docenti = report.stream().filter(pr1 -> pr1.getRuolo().equalsIgnoreCase("DOCENTE")).collect(Collectors.toList());
 
 //            if (docenti.size() == 1) {
-            List<Presenti> docenti = report.stream().filter(pr1 -> pr1.getRuolo().equalsIgnoreCase("DOCENTE")).sorted(Comparator.comparing(Presenti::getOradilogin)).collect(Collectors.toList());
+            List<Presenti> docenti = report.stream().filter(pr1 -> pr1.getRuolo().equalsIgnoreCase("DOCENTE"))
+                    .sorted(Comparator.comparing(Presenti::getOradilogin)).collect(Collectors.toList());
 
             StringBuilder doc1getOradilogin = new StringBuilder();
             StringBuilder doc1getOradilogout = new StringBuilder();
@@ -232,8 +232,8 @@ public class Create {
                     Db_Gest db0 = new Db_Gest(host);
 
                     try (Statement st1 = db0.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sqloredocente)) {
-                        if (rs1.next()) {
-                            oredocente = convertHours(rs1.getString(1));
+                        while (rs1.next()) {
+                            oredocente += convertHours(rs1.getString(1));
                         }
                     }
                     db0.closeDB();
@@ -248,7 +248,7 @@ public class Create {
                         doc1.setTotaleorerendicontabili(calcoladurata(millischeck));
                         doc1.setMillistotaleorerendicontabili(millischeck);
                     }
-
+                    System.out.println("rc.soop.gestione.Create.gestisciorerendicontabili( ) "+doc1.getMillistotaleorerendicontabili());
                 }
 
             }

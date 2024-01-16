@@ -700,7 +700,7 @@ public class Db_Gest {
     public int get_allievi_accreditati(int idpr) {
         int out = 0;
         try {
-            String sql = "SELECT COUNT(a.idallievi) FROM allievi a WHERE a.id_statopartecipazione='01' AND a.idprogetti_formativi=" + idpr;
+            String sql = "SELECT COUNT(a.idallievi) FROM allievi a WHERE a.id_statopartecipazione IN ('13','14','15','18','19') AND a.idprogetti_formativi=" + idpr;
             try (Statement st1 = this.c.createStatement(); ResultSet rs = st1.executeQuery(sql)) {
                 if (rs.next()) {
                     out = rs.getInt(1);
