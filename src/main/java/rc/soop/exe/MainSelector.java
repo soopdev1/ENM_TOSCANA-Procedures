@@ -51,7 +51,7 @@ public class MainSelector {
         try {
             select_action = Integer.parseInt(args[1].trim());
         } catch (Exception e) {
-            select_action = 3;
+            select_action = 4;
         }
 
         Toscana_gestione tg = new Toscana_gestione(testing);

@@ -59,14 +59,12 @@ import static rc.soop.exe.Utils.timestampITAcomplete;
 import static rc.soop.exe.Utils.timestampSQL;
 import static rc.soop.gestione.Constant.calcoladurata;
 import static rc.soop.gestione.Constant.checkPDF;
-import static rc.soop.gestione.Constant.convertHours;
 import static rc.soop.gestione.Constant.convertPDFA;
 import static rc.soop.gestione.Constant.convertTS_Italy;
 import static rc.soop.gestione.Constant.format;
 import static rc.soop.gestione.Constant.getIdUser;
 import static rc.soop.gestione.Constant.printbarcode;
 import static rc.soop.gestione.Create.gestisciorerendicontabili;
-import static rc.soop.gestione.Create.manage;
 import static rc.soop.gestione.Toscana_gestione.log;
 
 /**
@@ -921,16 +919,14 @@ public class FaseA {
                                             }
                                             String date = convertTS_Italy(rs2.getString(3));
                                             switch (tipoazione) {
-                                                case "L1":
-                                                case "L2":
-                                                case "L3":
+                                                case "L1", "L2", "L3" -> {
                                                     if (azione.startsWith("ALLIEVO")) {
                                                         try {
                                                             int idallievo = Integer.parseInt(azione.split(";")[1]);
                                                             Utenti u = allievi.stream().filter(al -> al.getId() == idallievo).findFirst().get();
                                                             azione = azioni.stream().filter(az -> az.getCod().equalsIgnoreCase(tipoazione)).findFirst().get().getDescrizione() + " -> "
-                                                            + u.getNome() + " "
-                                                            + u.getCognome();
+                                                                    + u.getNome() + " "
+                                                                    + u.getCognome();
                                                             Track t1 = new Track("USER", tipoazione, azione, date, day, null);
                                                             tracking.add(t1);
                                                             tutti.add(u);
@@ -942,8 +938,8 @@ public class FaseA {
                                                             int iddocente = Integer.parseInt(azione.split(";")[1]);
                                                             Utenti u = docenti.stream().filter(al -> al.getId() == iddocente).findFirst().get();
                                                             azione = azioni.stream().filter(az -> az.getCod().equalsIgnoreCase(tipoazione)).findFirst().get().getDescrizione() + " -> "
-                                                            + u.getNome() + " "
-                                                            + u.getCognome();
+                                                                    + u.getNome() + " "
+                                                                    + u.getCognome();
                                                             Track t1 = new Track("DOCENTE", tipoazione, azione, date, day, null);
                                                             tracking.add(t1);
                                                             tutti.add(u);
@@ -951,30 +947,12 @@ public class FaseA {
                                                             log.severe(Constant.estraiEccezione(ex));
                                                         }
                                                     }
-                                                    break;
-                                                //USCITI TUTTI
-//                                                List<Utenti> t11 = tutti.stream().distinct().collect(Collectors.toList());
-//                                                t11.forEach(u1 -> {
-//                                                    Track t1 = new Track(u1.getRuolo(), "L2", "Logout -> " + u1.getNome() + " " + u1.getCognome(), date, day, null);
-//                                                    tracking.add(t1);
-//                                                });
-                                                case "L5":
-                                                    break;
-//                                                try {
-//                                                    String idfad = StringUtils.remove(azione, "USCITA PARTECIPANTE -> ").trim();
-//                                                    String nomecogn = "";
-//                                                    if (idutenti.stream().filter(ut -> ut.getCod().equals(idfad)).findAny().orElse(null) != null) {
-//                                                        nomecogn = idutenti.stream().filter(ut -> ut.getCod().equals(idfad)).findFirst().get().getDescrizione().toUpperCase();
-//                                                        azione = "Logout -> " + nomecogn;
-//                                                        Track t1 = new Track("", tipoazione, azione, date, day, idfad);
-//                                                        tracking.add(t1);
-//                                                    }
-//                                                } catch (Exception ex) {
-//                                                    Create.log.severe(Constant.estraiEccezione(ex));
-//                                                }
-                                                case "L4":
-                                                    break;
-                                                case "IN":
+                                                }
+                                                case "L5" -> {
+                                                }
+                                                case "L4" -> {
+                                                }
+                                                case "IN" -> {
                                                     if (azione.startsWith("UTENTE LOGGATO CON ID")) {
                                                         String idfad = StringUtils.remove(azione.split("--")[0], "UTENTE LOGGATO CON ID").trim();
                                                         if (azione.split("--").length > 1) {
@@ -1009,11 +987,29 @@ public class FaseA {
                                                             tracking.add(t1);
                                                         }
                                                     }
-                                                    break;
-                                                default:
-                                                    break;
+                                                }
+                                                default -> {
+                                                }
                                             }
-                                        }
+                                            //USCITI TUTTI
+//                                                List<Utenti> t11 = tutti.stream().distinct().collect(Collectors.toList());
+//                                                t11.forEach(u1 -> {
+//                                                    Track t1 = new Track(u1.getRuolo(), "L2", "Logout -> " + u1.getNome() + " " + u1.getCognome(), date, day, null);
+//                                                    tracking.add(t1);
+//                                                });
+//                                                try {
+//                                                    String idfad = StringUtils.remove(azione, "USCITA PARTECIPANTE -> ").trim();
+//                                                    String nomecogn = "";
+//                                                    if (idutenti.stream().filter(ut -> ut.getCod().equals(idfad)).findAny().orElse(null) != null) {
+//                                                        nomecogn = idutenti.stream().filter(ut -> ut.getCod().equals(idfad)).findFirst().get().getDescrizione().toUpperCase();
+//                                                        azione = "Logout -> " + nomecogn;
+//                                                        Track t1 = new Track("", tipoazione, azione, date, day, idfad);
+//                                                        tracking.add(t1);
+//                                                    }
+//                                                } catch (Exception ex) {
+//                                                    Create.log.severe(Constant.estraiEccezione(ex));
+//                                                }
+                                                                                    }
                                     }
                                 } catch (Exception ex) {
                                     log.severe(Constant.estraiEccezione(ex));
@@ -1169,6 +1165,7 @@ public class FaseA {
 
                                     }
                                 }
+                                
                                 AtomicLong millisdurata = new AtomicLong(0);
                                 millisdurata.addAndGet(-format("2021-01-01 " + StringUtils.substring(inizio.toString(), 0, 8), timestampSQL).getMillis());
                                 millisdurata.addAndGet(format("2021-01-01 " + StringUtils.substring(fine.toString(), 0, 8), timestampSQL).getMillis());

@@ -435,12 +435,12 @@ public class FaseB {
 
                 manage(db1, idpr);
 
-                String sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore,lm.gruppo_faseB,f.nomestanza  FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud, fad_multi f "
+                String sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore,lm.gruppo_faseB,f.nomestanza,mp.id_modello  FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud, fad_multi f "
                         + "    WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario AND ud.codice=lc.codice_ud AND f.idprogetti_formativi=mp.id_progettoformativo AND f.numerocorso=lm.gruppo_faseB "
                         + " AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase B' AND lm.giorno < CURDATE() ORDER BY lm.gruppo_faseB,lc.lezione,lm.orario_start";
 
                 if (today) {
-                    sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore,lm.gruppo_faseB,f.nomestanza  FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud, fad_multi f "
+                    sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore,lm.gruppo_faseB,f.nomestanza,mp.id_modello  FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud, fad_multi f "
                             + " WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario AND ud.codice=lc.codice_ud AND f.idprogetti_formativi=mp.id_progettoformativo AND f.numerocorso=lm.gruppo_faseB "
                             + " AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase B' AND lm.giorno <= CURDATE() ORDER BY lm.gruppo_faseB,lc.lezione,lm.orario_start";
                 }
@@ -450,10 +450,13 @@ public class FaseB {
                         log.log(Level.INFO, "2) {0}", sql1);
                     }
                     while (rs1.next()) {
-                        calendartemp.add(new Lezione(rs1.getInt("lc.lezione"),
+                        
+                        Lezione temp1 = new Lezione(rs1.getInt("lc.lezione"),
                                 rs1.getInt("lm.id_docente"),
                                 rs1.getString("lm.giorno"), rs1.getString("lm.orario_start"), rs1.getString("lm.orario_end"),
-                                rs1.getString("ud.codice"), rs1.getString("lc.ore"), rs1.getInt("lm.gruppo_faseB"), rs1.getString("f.nomestanza")));
+                                rs1.getString("ud.codice"), rs1.getString("lc.ore"), rs1.getInt("lm.gruppo_faseB"), rs1.getString("f.nomestanza"));
+                        temp1.setMpid_modello(rs1.getInt("mp.id_modello"));
+                        calendartemp.add(temp1);
                     }
                     if (printing) {
                         log.log(Level.INFO, "2) {0}", calendartemp.size());
@@ -758,47 +761,6 @@ public class FaseB {
                                             ind.addAndGet(1);
                                         });
 
-//                                        userp.forEach(ba1 -> {
-//                                            if (ind.get() == 0) {
-//                                                if (ba1.isLogin()) {
-//                                                    userp_final.add(ba1);
-//                                                }
-//                                            } else {
-//                                                if (userp_final.isEmpty()) {
-//                                                    userp_final.add(ba1);
-//                                                } else {
-//                                                    Presenti precedente = userp_final.getLast();
-//                                                    if (precedente.isLogin()) {
-//                                                        if (ba1.isLogin()) {
-//                                                            if (ba1.getIdfad() != null) {
-//                                                                precedente.setIdfad(ba1.getIdfad());
-//                                                            }
-//                                                        } else {
-//
-////                                                            if (day.equals("2021-06-22") && ba1.getCognome().contains("OFFI")) {
-////                                                                System.out.println("it.refill.report.FaseB.calcolaegeneraregistrofaseb(a) " + ba1.toString());
-////                                                                System.out.println("it.refill.report.FaseB.calcolaegeneraregistrofaseb(b)" + precedente.toString());
-////                                                            }
-//                                                            if (ba1.getIdfad() == null || ba1.getIdfad().equals(precedente.getIdfad())) {
-//                                                                userp_final.add(ba1);
-////                                                                if (day.equals("2021-06-22") && ba1.getCognome().contains("OFFI")) {
-////                                                                    System.out.println("AGGIUNGO -------------------------------");
-//////                                                                
-////                                                                }
-//                                                            }
-//                                                        }
-//                                                    } else {
-//                                                        if (ba1.isLogin()) {
-//                                                            userp_final.add(ba1);
-//                                                        } else {
-//
-//                                                        }
-//
-//                                                    }
-//                                                }
-//                                            }
-//                                            ind.addAndGet(1);
-//                                        });
                                         if ((userp_final.size() % 2) != 0) {
                                             if (userp_final.getLast().isLogout()) {
                                                 userp_final.removeLast();
@@ -871,6 +833,31 @@ public class FaseB {
                                         }
                                     }
                                 });
+                                
+                                
+                                List<Presenti> solodocenti = report.stream().filter(r1 -> r1.getRuolo().equals("DOCENTE")).sorted(Comparator.comparing(a -> a.getOradilogin())).collect(Collectors.toList());
+                                for (Presenti ps : solodocenti) {
+                                    List<String> login_S = Splitter.on("\n").splitToList(ps.getOradilogin());
+                                    List<String> logout_S = Splitter.on("\n").splitToList(ps.getOradilogout());
+                                    if (!login_S.isEmpty() && !logout_S.isEmpty()) {
+                                        if (inizio.isEmpty()) {
+                                            inizio.append(login_S.get(0));
+                                        }
+                                        if (fine.isEmpty()) {
+                                            fine.append(logout_S.get(logout_S.size() - 1));
+                                        } else {
+                                            fine.setLength(0);
+                                            fine.append(logout_S.get(logout_S.size() - 1));
+                                        }
+
+                                    }
+                                }
+                                
+                                AtomicLong millisdurata = new AtomicLong(0);
+                                millisdurata.addAndGet(-format("2021-01-01 " + StringUtils.substring(inizio.toString(), 0, 8), timestampSQL).getMillis());
+                                millisdurata.addAndGet(format("2021-01-01 " + StringUtils.substring(fine.toString(), 0, 8), timestampSQL).getMillis());
+                                long duratalogindurata = (millisdurata.get());
+                                durata.set(duratalogindurata);
 
                                 gestisciorerendicontabili(report, idpr, host, cal);
 

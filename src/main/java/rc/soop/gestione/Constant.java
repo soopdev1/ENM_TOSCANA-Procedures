@@ -327,19 +327,19 @@ public class Constant {
     }
 
     public static long getTimeDiff() {
-        try {
-            TimeZone tz1 = TimeZone.getTimeZone("Europe/Rome");
-            TimeZone tz2 = TimeZone.getTimeZone("GMT");
-            TimeZone tz3 = TimeZone.getTimeZone("GMT+1");
-            ZoneId arrivingZone = ZoneId.of("Europe/Rome");
-            ZonedDateTime arrival = Instant.now().atZone(arrivingZone);
-            if (arrivingZone.getRules().isDaylightSavings(arrival.toInstant())) {
-                return tz1.getRawOffset() - tz2.getRawOffset() + tz1.getDSTSavings() - tz2.getDSTSavings();
-            } else {
-                return tz1.getRawOffset() - tz3.getRawOffset() + tz1.getDSTSavings() - tz3.getDSTSavings();
-            }
-        } catch (Exception e) {
-        }
+//        try {
+//            TimeZone tz1 = TimeZone.getTimeZone("Europe/Rome");
+//            TimeZone tz2 = TimeZone.getTimeZone("GMT");
+//            TimeZone tz3 = TimeZone.getTimeZone("GMT+1");
+//            ZoneId arrivingZone = ZoneId.of("Europe/Rome");
+//            ZonedDateTime arrival = Instant.now().atZone(arrivingZone);
+//            if (arrivingZone.getRules().isDaylightSavings(arrival.toInstant())) {
+//                return tz1.getRawOffset() - tz2.getRawOffset() + tz1.getDSTSavings() - tz2.getDSTSavings();
+//            } else {
+//                return tz1.getRawOffset() - tz3.getRawOffset() + tz1.getDSTSavings() - tz3.getDSTSavings();
+//            }
+//        } catch (Exception e) {
+//        }
         return 0L;
     }
 

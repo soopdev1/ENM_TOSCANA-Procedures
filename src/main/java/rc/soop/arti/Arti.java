@@ -69,7 +69,7 @@ public class Arti {
 
     }
 
-    public static ResponseStatoIscrizione invia(boolean testing, String codiceAttivita, String codiceFiscale, String statoarti) {
+    public static ResponseStatoIscrizione invia(boolean testing, String codiceAttivita, String codiceFiscale, String statoarti,String dataInizioCorso, String dataFineCorso) {
         try {
             FaseA FA = new FaseA(testing);
             String datenow = new DateTime().toString("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -77,8 +77,8 @@ public class Arti {
             jo.addProperty("codiceAttivita", codiceAttivita);
             jo.addProperty("codiceFiscale", codiceFiscale);
             jo.addProperty("dataEsame", datenow);
-            jo.addProperty("dataFineCorso", datenow);
-            jo.addProperty("dataInizioCorso", datenow);
+            jo.addProperty("dataFineCorso", dataFineCorso);
+            jo.addProperty("dataInizioCorso", dataInizioCorso);
             jo.addProperty("dataStato", datenow);
             jo.addProperty("descrizioneStato", statoarti);
             jo.addProperty("stato", statoarti);

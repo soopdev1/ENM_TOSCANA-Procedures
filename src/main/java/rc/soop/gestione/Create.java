@@ -58,8 +58,6 @@ public class Create {
             }
             db0.closeDB();
 
-            list_id.add(3);
-
             FaseB FB = new FaseB(testing);
 
             list_id.forEach(idpr -> {
