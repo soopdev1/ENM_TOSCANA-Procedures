@@ -9,13 +9,11 @@ import com.google.common.base.Splitter;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
@@ -23,6 +21,7 @@ import static org.joda.time.format.DateTimeFormat.forPattern;
 import org.joda.time.format.DateTimeFormatter;
 import static rc.soop.exe.Utils.estraiEccezione;
 import static rc.soop.exe.Utils.timestampSQL;
+import static rc.soop.gestione.Constant.MAX;
 import static rc.soop.gestione.Constant.calcoladurata;
 import static rc.soop.gestione.Constant.convertHours;
 import static rc.soop.gestione.Toscana_gestione.log;
@@ -58,6 +57,9 @@ public class Create {
             }
             db0.closeDB();
 
+            list_id.add(3);
+            
+            
             FaseB FB = new FaseB(testing);
 
             list_id.forEach(idpr -> {
@@ -221,11 +223,11 @@ public class Create {
                     long millischeck1 = nuova_rendicontazione_ore(doc1.getMillistotaleore(), idpr, host);
 
                     String sqloredocente = "SELECT l1.ore FROM lezioni_modelli l, lezione_calendario l1, docenti d1 "
-                            + "WHERE l1.id_lezionecalendario=l.id_lezionecalendario AND l.id_modelli_progetto=" + cal.getMpid_modello() + " AND l.giorno='" + cal.getGiorno() + "' "
-                            + "AND l.id_docente=d1.iddocenti AND d1.email='" + doc1.getEmail()+ "';";
+                            + "WHERE l1.id_lezionecalendario=l.id_lezionecalendario AND l.id_modelli_progetto=" + cal.getMpid_modello()
+                            + " AND l.giorno='" + cal.getGiorno() + "' "
+                            + "AND l.id_docente=d1.iddocenti AND d1.email='" + doc1.getEmail() + "';";
+//                    System.out.println("rc.soop.gestione.Create.gestisciorerendicontabili() "+sqloredocente);
                     long oredocente = 0;
-                    
-                    System.out.println(sqloredocente);
 
                     Db_Gest db0 = new Db_Gest(host);
 
@@ -235,6 +237,10 @@ public class Create {
                         }
                     }
                     db0.closeDB();
+
+                    if (oredocente > MAX) {
+                        oredocente = MAX;
+                    }
 
                     if (millischeck >= oredocente) {
                         doc1.setTotaleorerendicontabili(calcoladurata(oredocente));
@@ -246,7 +252,6 @@ public class Create {
                         doc1.setTotaleorerendicontabili(calcoladurata(millischeck));
                         doc1.setMillistotaleorerendicontabili(millischeck);
                     }
-                    System.out.println("rc.soop.gestione.Create.gestisciorerendicontabili( ) "+doc1.getMillistotaleorerendicontabili());
                 }
 
             }
@@ -274,33 +279,6 @@ public class Create {
             log.severe(estraiEccezione(e1));
         }
         return millis;
-    }
-
-    public static void manage(Db_Gest db0, int idpr) {
-        try {
-            switch (idpr) {
-                case 82:
-                    db0.getConnection().createStatement().executeUpdate("UPDATE fad_track f SET action = REPLACE(action,'-- Giorgia','-- GIORGIA GUIDALDI') "
-                            + "WHERE f.room LIKE 'FADMCN_" + idpr + "%' AND action LIKE'%-- Giorgia'");
-                    break;
-                case 123:
-                    db0.getConnection().createStatement().executeUpdate("UPDATE fad_track f SET action = REPLACE(action,'-- Manuela','-- MANUELA CAPUTO') "
-                            + "WHERE f.room LIKE 'FADMCN_" + idpr + "%' AND action LIKE'%-- Manuela'");
-                    break;
-                case 338:
-                    db0.getConnection().createStatement().executeUpdate("UPDATE fad_track f SET action = REPLACE(action,'IANNO&#39;','IANNO\\'') "
-                            + "WHERE f.room LIKE 'FADMCNDD_" + idpr + "%' AND action LIKE '%IANNO&#39;'");
-                    break;
-                case 678:
-                    db0.getConnection().createStatement().executeUpdate("UPDATE fad_track f SET action = REPLACE(action,'CARA&#39;','CARA\\'') "
-                            + "WHERE f.room LIKE 'FADMCNDD_" + idpr + "%' AND action LIKE '%CARA&#39;'");
-                    break;
-                default:
-                    break;
-            }
-        } catch (Exception e) {
-            log.severe(estraiEccezione(e));
-        }
     }
 
 }

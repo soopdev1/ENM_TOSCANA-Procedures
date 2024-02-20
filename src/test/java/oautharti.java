@@ -7,8 +7,11 @@
  *
  * @author Administrator
  */
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import java.io.IOException;
 import java.net.URI;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -36,45 +39,61 @@ import org.dmfs.rfc5545.Duration;
 import org.joda.time.DateTime;
 import rc.soop.arti.Arti;
 import rc.soop.arti.ResponseStatoIscrizione;
+import static rc.soop.exe.Utils.estraiEccezione;
+import static rc.soop.exe.Utils.getJsonString;
 import rc.soop.gestione.Db_Gest;
 import rc.soop.gestione.FaseA;
+import static rc.soop.gestione.Toscana_gestione.log;
 
 public class oautharti {
 
     public static void main(String[] args) {
+        String sql = "SELECT t.azione FROM tracking t WHERE t.azione LIKE 'insertiscrizione%' GROUP BY t.azione;";
 
-        boolean testing = false;
-
-        FaseA FA = new FaseA(testing);
+        FaseA FA = new FaseA(false);
 
         Db_Gest db0 = new Db_Gest(FA.getHost());
 
-        String sql_INCORSO = "SELECT a.codicefiscale,p.cip,a.idallievi,p.start,p.end FROM allievi a, progetti_formativi p WHERE a.idprogetti_formativi=p.idprogetti_formativi "
-                + "AND  a.id_statopartecipazione='15' AND (a.esito IS NULL OR a.esito NOT IN('AMMESSO_INIZIO_CORSO','AMMESSO_DOPO_INIZIO_CORSO')) ORDER BY a.codicefiscale;";
-        String AMMESSO_INIZIO_CORSO = "AMMESSO_INIZIO_CORSO";
-        try (Statement st1 = db0.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql_INCORSO)) {
+        try (Statement st1 = db0.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql)) {
             while (rs1.next()) {
-                String CIP = rs1.getString("p.cip");
-                String CF = rs1.getString("a.codicefiscale");
-                String dataInizioCorso = rs1.getString("p.start") + "T00:00:00.000Z";
-                String dataFineCorso = rs1.getString("p.end") + "T00:00:00.000Z";
+                String azione = rs1.getString("t.azione").replaceAll("insertiscrizione: ", "");
 
-                ResponseStatoIscrizione resp = Arti.invia(testing, CIP, CF, AMMESSO_INIZIO_CORSO, dataInizioCorso, dataFineCorso);
-                if (resp.getStatus().equals("success")) {
-                    //UPDATE
-                    String update = "UPDATE allievi SET esito='" + AMMESSO_INIZIO_CORSO + "' WHERE idallievi = " + rs1.getString("A.idallievi");
-                    try (Statement st2 = db0.getConnection().createStatement()) {
-                        boolean ok = st2.executeUpdate(update) > 0;
-                        System.out.println(CIP + " () " + CF + ": " + update + " - " + ok);
+                JsonObject convertedObject = new Gson().fromJson(azione, JsonObject.class);
+
+                String codiceFiscale = getJsonString(convertedObject, "codiceFiscale");
+                JsonObject datiIscrizione = convertedObject.getAsJsonObject("datiIscrizione");
+//                System.out.println("oautharti.main() "+codiceFiscale);
+                JsonObject indirizzoResidenza = datiIscrizione.getAsJsonObject("indirizzoResidenza");
+//                String codCatastaleComune = getJsonString(indirizzoResidenza, "codCatastaleComune");
+                String via = getJsonString(indirizzoResidenza, "via");
+                String cap = getJsonString(indirizzoResidenza, "cap");
+                if (!datiIscrizione.get("indirizzoDomicilio").isJsonNull()) {
+                    JsonObject indirizzoDomicilio = datiIscrizione.getAsJsonObject("indirizzoDomicilio");
+                    String DOM_codCatastaleComune = getJsonString(indirizzoDomicilio, "codCatastaleComune");
+                    String DOM_via = getJsonString(indirizzoDomicilio, "via");
+                    String DOM_cap = getJsonString(indirizzoDomicilio, "cap");
+                    String update = "UPDATE allievi SET comune_domicilio = ?, indirizzodomicilio = ?, capdomicilio = ? WHERE codicefiscale = ? AND comune_domicilio IS NULL";
+                    Long idComuneDomicilio = db0.getIdComune(DOM_codCatastaleComune);
+                    try (PreparedStatement ps = db0.getConnection().prepareStatement(update)) {
+                        ps.setLong(1, idComuneDomicilio);
+                        ps.setString(2, DOM_via);
+                        ps.setString(3, DOM_cap);
+                        ps.setString(4, codiceFiscale);
+                        boolean es = ps.executeUpdate() > 1;
+                        if (es) {
+                            System.out.println(codiceFiscale + " oautharti.main() " + idComuneDomicilio + " - " + via + " - " + cap);
+                        } else {
+//                            System.out.println(codiceFiscale + " ERRORE " + idComuneDomicilio + " - " + via + " - " + cap);
+                        }
                     }
+//                    System.out.println(codiceFiscale + " oautharti.main() " + DOM_codCatastaleComune + " - " + DOM_via + " - " + DOM_cap);
+                } else {
+//                    System.out.println(codiceFiscale + " oautharti.main(NO DOMICILIO) ");
                 }
-                break;
             }
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-
         db0.closeDB();
-
     }
 }

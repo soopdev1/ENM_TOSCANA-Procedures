@@ -4,6 +4,10 @@
  */
 package rc.soop.exe;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import static java.lang.Integer.parseInt;
@@ -56,7 +60,9 @@ public class Utils {
     public static final DateTimeFormatter dtfh = DateTimeFormat.forPattern(patternHmin);
     public static final DateTimeFormatter dtfsql = DateTimeFormat.forPattern(timestampSQL);
     public static final SimpleDateFormat sdfITA = new SimpleDateFormat(patternITA);
+    public static final SimpleDateFormat sdfSQL = new SimpleDateFormat(patternSql);
     public static final String pathICC = "/home/tomcat/jar/sRGB.icc";
+
     public static String estraiEccezione(Exception ec1) {
         try {
             String stack_nam = ec1.getStackTrace()[0].getMethodName();
@@ -69,7 +75,7 @@ public class Utils {
 
     public static Logger createLog(String nameapp) {
         try {
-            
+
             Db_Accr db1 = new Db_Accr(conf.getString("db.host") + ":3306/enm_toscana_prod");
             String logpath = db1.getPath("pathtemp");
             db1.closeDB();
@@ -125,6 +131,7 @@ public class Utils {
             }
         }
     }
+
     public static String formatStringtoStringDateSQL(String dat) {
         return formatStringtoStringDate(dat, patternSql, patternITA, false);
 
@@ -145,7 +152,7 @@ public class Utils {
         }
         return "DATA ERRATA";
     }
-    
+
     public static int parseIntR(String value) {
         value = value.replaceAll("-", "").trim();
         if (value.contains(".")) {
@@ -160,11 +167,10 @@ public class Utils {
         }
         return d1;
     }
-    
+
     public static void setCell(XSSFCell cella, String valore) {
         try {
-            
-            
+
             cella.setCellValue(valore);
         } catch (Exception e) {
             e.printStackTrace();
@@ -216,5 +222,24 @@ public class Utils {
             riga = null;
         }
         return riga;
+    }
+
+    
+    
+    public static String getJsonString(JsonObject base, String fieldname) {
+        try {
+            JsonPrimitive o1 = base.getAsJsonPrimitive(fieldname);
+            if (o1 != null) {
+                return o1.getAsString().trim();
+            } else {
+                Object o2 = base.getAsJsonObject(fieldname).toString();
+                if (o2 != null) {
+                    return o2.toString().trim();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 }

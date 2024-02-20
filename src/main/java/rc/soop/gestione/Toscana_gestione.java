@@ -65,11 +65,13 @@ public class Toscana_gestione {
         try (Statement st1 = db1.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
             while (rs1.next()) {
                 int idallievi = rs1.getInt(1);
-                String sql2 = "SELECT r.totaleorerendicontabili,r.fase FROM registro_completo r WHERE r.idutente='" + idallievi + "' AND r.ruolo='ALLIEVO'";
-//                String sql3 = "SELECT a.durataconvalidata FROM presenzelezioniallievi a WHERE a.idallievi = '" + idallievi + "' AND a.convalidata=1";
-                String sql3 = "SELECT p.durataconvalidata,z.codice_ud FROM presenzelezioniallievi p, presenzelezioni l, lezione_calendario z "
-                        + "WHERE p.idallievi = '" + idallievi + "' AND p.convalidata=1 AND l.idpresenzelezioni=p.idpresenzelezioni "
-                        + "AND l.idlezioneriferimento=z.id_lezionecalendario ";
+                String sql2 = "SELECT r.totaleorerendicontabili,r.fase FROM registro_completo r WHERE r.idutente='" 
+                        + idallievi + "' AND r.ruolo='ALLIEVO'";
+                String sql3 = "SELECT a.durataconvalidata FROM presenzelezioniallievi a WHERE a.idallievi = '" 
+                        + idallievi + "' AND a.convalidata=1";
+//                String sql3 = "SELECT p.durataconvalidata,z.codice_ud FROM presenzelezioniallievi p, presenzelezioni l, lezione_calendario z "
+//                        + "WHERE p.idallievi = '" + idallievi + "' AND p.convalidata=1 AND l.idpresenzelezioni=p.idpresenzelezioni "
+//                        + "AND l.idlezioneriferimento=z.id_lezionecalendario ";
 
                 Long presenze = 0L;
 
@@ -84,7 +86,7 @@ public class Toscana_gestione {
                 try (Statement st3 = db1.getConnection().createStatement(); ResultSet rs3 = st3.executeQuery(sql3)) {
                     while (rs3.next()) {
                         Long conv = rs3.getString(1) == null ? 0L : rs3.getLong(1);
-                        report.add(idallievi + ";" + StringUtils.substring(rs3.getString(2), 0, 1) + ";" + conv);
+//                        report.add(idallievi + ";" + StringUtils.substring(rs3.getString(2), 0, 1) + ";" + conv);
                         presenze += conv;
                     }
                 }
@@ -96,6 +98,11 @@ public class Toscana_gestione {
                 try (Statement st4 = db1.getConnection().createStatement()) {
                     st4.executeUpdate(upd4);
                 }
+                
+                System.out.println(sql1);
+                System.out.println(sql2);
+                System.out.println(sql3);
+                System.out.println(upd4);
 
             }
 
@@ -620,7 +627,7 @@ public class Toscana_gestione {
             String fileing = "/mnt/mcn/yisu_toscana/estrazioni/Report_Allievi_Toscana.xlsx";
             String fileout = "/mnt/mcn/yisu_toscana/estrazioni/Report_Allievi_" + new DateTime().toString(timestamp) + ".xlsx";
 
-            String sql0 = "SELECT * FROM allievi a ORDER BY a.cognome";
+            String sql0 = "SELECT * FROM allievi a WHERE a.id_statopartecipazione<>'00' ORDER BY a.cognome";
             Db_Gest db1 = new Db_Gest(this.host);
 
             try (OutputStream outputStream = new FileOutputStream(new File(fileout)); XSSFWorkbook wb = new XSSFWorkbook(new FileInputStream(new File(fileing)))) {
@@ -637,8 +644,11 @@ public class Toscana_gestione {
 
                         String comune_nascita = "";
                         String comune_residenza = "";
+                        String comune_domicilio = "";
                         String provincia_residenza = "";
+                        String provincia_domicilio = "";
                         String regione_residenza = "";
+                        String regione_domicilio = "";
 
                         String sql1 = "SELECT nome,idcomune,nome_provincia,regione FROM comuni WHERE idcomune IN ("
                                 + rs0.getInt("a.comune_nascita") + ","
@@ -654,6 +664,11 @@ public class Toscana_gestione {
                                     comune_residenza = rs1.getString(1).toUpperCase();
                                     provincia_residenza = rs1.getString(3).toUpperCase();
                                     regione_residenza = rs1.getString(4).toUpperCase();
+                                }
+                                if (rs1.getInt(2) == rs0.getInt("a.comune_domicilio")) {
+                                    comune_domicilio = rs1.getString(1).toUpperCase();
+                                    provincia_domicilio = rs1.getString(3).toUpperCase();
+                                    regione_domicilio = rs1.getString(4).toUpperCase();
                                 }
                             }
                         }
@@ -731,7 +746,7 @@ public class Toscana_gestione {
                             }
                         }
 
-                        String utilita = rs0.getString("a.tos_m0_utilita") == null ? "" : rs0.getString("a.tos_m0_gradoconoscenza");
+                        String utilita = rs0.getString("a.tos_m0_utilita") == null ? "" : rs0.getString("a.tos_m0_utilita");
                         utilita = switch (utilita) {
                             case "1" ->
                                 "PER NULLA UTILE";
@@ -786,7 +801,7 @@ public class Toscana_gestione {
 
                         String consapevole = rs0.getString("a.tos_m0_consapevole") == null ? "SI" : (rs0.getInt("a.tos_m0_consapevole") == 1 ? "SI" : "NO");
 
-                        String volonta = rs0.getString("a.tos_m0_volonta") == null ? "" : (rs0.getInt("a.tos_m0_volonta") == 1 ? "SI" : "NO");
+                        String volonta = rs0.getString("a.tos_m0_volonta") == null ? "NO" : (rs0.getInt("a.tos_m0_volonta") == 1 ? "SI" : "NO");
 
                         switch (volonta) {
                             case "SI" -> {
@@ -862,15 +877,15 @@ public class Toscana_gestione {
                         setCell(getCell(row, indicecolonna.addAndGet(1)), " ");
                         setCell(getCell(row, indicecolonna.addAndGet(1)), " ");
                         setCell(getCell(row, indicecolonna.addAndGet(1)), comune_residenza);
-                        setCell(getCell(row, indicecolonna.addAndGet(1)), " ");
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), rs0.getString("a.capresidenza") == null ? "" : rs0.getString("a.capresidenza").trim());
                         setCell(getCell(row, indicecolonna.addAndGet(1)), provincia_residenza);
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), regione_domicilio);
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), rs0.getString("a.indirizzodomicilio") == null ? "" : rs0.getString("a.indirizzodomicilio").trim().toUpperCase());
                         setCell(getCell(row, indicecolonna.addAndGet(1)), " ");
                         setCell(getCell(row, indicecolonna.addAndGet(1)), " ");
-                        setCell(getCell(row, indicecolonna.addAndGet(1)), " ");
-                        setCell(getCell(row, indicecolonna.addAndGet(1)), " ");
-                        setCell(getCell(row, indicecolonna.addAndGet(1)), " ");
-                        setCell(getCell(row, indicecolonna.addAndGet(1)), " ");
-                        setCell(getCell(row, indicecolonna.addAndGet(1)), " ");
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), comune_domicilio);
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), rs0.getString("a.capdomicilio") == null ? "" : rs0.getString("a.capdomicilio").trim());
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), provincia_domicilio);
                         setCell(getCell(row, indicecolonna.addAndGet(1)), cpi);
                         setCell(getCell(row, indicecolonna.addAndGet(1)), rs0.getDate("a.datacpi") == null ? "" : sdfITA.format(rs0.getDate("a.datacpi")));
                         setCell(getCell(row, indicecolonna.addAndGet(1)), rs0.getString("a.tos_tipofinanziamento"));
@@ -906,8 +921,7 @@ public class Toscana_gestione {
                         maxrow.set(indicecolonna.get());
                     }
                 }
-                System.out.println("rc.soop.gestione.Toscana_gestione.report_allievi() " + maxrow.get());
-                for (int i = 0; i < 60; i++) {
+                for (int i = 0; i < 56; i++) {
                     sh1.autoSizeColumn(i);
                 }
                 wb.write(outputStream);

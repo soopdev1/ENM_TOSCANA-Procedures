@@ -7,6 +7,7 @@ package rc.soop.exe;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import rc.soop.accreditamento.Engine;
+import rc.soop.arti.Arti;
 import static rc.soop.exe.Utils.estraiEccezione;
 import static rc.soop.gestione.Create.crearegistri;
 import rc.soop.gestione.Toscana_gestione;
@@ -29,14 +30,11 @@ public class MainSelector {
 
         //ARGS[0] TEST
         //////////////////////////////
-        //ARGS[1] OPERAZIONE 1 - 3
-        //1 - GESTIONE - COMUNICAZIONI
         //2 - GESTIONE - FAD
         //3 - GESTIONE - ESTRAZIONI
         //4 - GESTIONE - REPORT FAD
         //5 - ACCREDITAMENTO
-        //6 - REPAIR
-        //7 - RENDICONTAZIONE
+        //6 - IDOLARTI
         //////////////////////////////
         //ARGS[2] NEET - DD
         //////////////////////////////
@@ -51,7 +49,7 @@ public class MainSelector {
         try {
             select_action = Integer.parseInt(args[1].trim());
         } catch (Exception e) {
-            select_action = 4;
+            select_action = 6;
         }
 
         Toscana_gestione tg = new Toscana_gestione(testing);
@@ -85,10 +83,8 @@ public class MainSelector {
             case 4 -> {
                 log.warning("GESTIONE TOSCANA - REPORT FAD");
                 crearegistri(testing);
-                try {
-                    tg.ore_convalidateAllievi();
-                } catch (Exception e) {
-                }
+                log.warning("GESTIONE TOSCANA - UPDATE ORE CONVALIDATE");
+                tg.ore_convalidateAllievi();
                 break;
             }
             case 5 -> {
@@ -131,68 +127,20 @@ public class MainSelector {
                 }
                 break;
             }
-            default -> {
+            case 6 -> { //IDOLARTI AGGIORNA STATO ALLIEVI
+                try {
+                    log.info("START IDOLARTI AGGIORNA STATO ALLIEVI");
+                    Arti.cambiostato_allievo(testing);
+                    log.info("FINE IDOLARTI AGGIORNA STATO ALLIEVI");
+                } catch (Exception e) {
+                    log.severe(estraiEccezione(e));
+                }
+                break;
+            }
+            default -> { //NO ACTION
                 break;
             }
         }
-//                case 0:
-//                    log.severe("GESTIONE NEET - NESSUN METODO SELEZIONATO");
-//                    break;
-//                case 1:
-//                    log.warning("GESTIONE NEET - COMUNICAZIONI");
-//                    try {
-//                        log.warning("MAIL REMIND 1 GIORNO... INIZIO");
-//                        ne.mail_remind(1);
-//                        log.warning("MAIL REMIND 1 GIORNO... FINE");
-//                    } catch (Exception e) {
-//                    }
-//                    try {
-//                        log.warning("MAIL REMIND QUESTIONARI INGRESSO... INIZIO");
-//                        ne.mail_questionario_INGRESSO();
-//                        log.warning("MAIL REMIND QUESTIONARI INGRESSO... FINE");
-//                    } catch (Exception e) {
-//                    }
-//                    try {
-//                        log.warning("MAIL REMIND QUESTIONARI USCITA... INIZIO");
-//                        ne.mail_questionario_USCITA();
-//                        log.warning("MAIL REMIND QUESTIONARI USCITA... FINE");
-//                    } catch (Exception e) {
-//                    }
-//                    break;
-//                case 6:
-//                    log.warning("REPAIR NEET");
-//                    Repair neetr = new Repair(testing, true);
-//                    
-//                    try {
-//                        neetr.imposta_progetti_finettivita();
-//                    } catch (Exception e) {
-//                    }
-//                    
-//                    try {
-//                        neetr.impostaritiratounder36oreA();
-//                    } catch (Exception e) {
-//                        
-//                    }
-//                    
-//                    try {
-//                        neetr.copiadocumentidocenti();
-//                    } catch (Exception e) {
-//                        
-//                    }
-//                    try {
-//                        neetr.crea_pdf_unico_ANPAL(true);
-//                    } catch (Exception e) {
-//                        
-//                    }
-//                    break;
-//                case 7: 
-//                    try {
-//                    log.info("START RENDICONTAZIONE NEET");
-//                    new Rendicontazione(false, true).generaRendicontazione(true);
-//                    log.info("END RENDICONTAZIONE NEET");
-//                } catch (Exception e) {
-//                }
-//                break;
     }
 
 }

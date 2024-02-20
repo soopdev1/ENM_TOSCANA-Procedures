@@ -468,20 +468,21 @@ public class Constant {
             }
             return DateTimeFormat.forPattern(pattern).parseDateTime(ing);
         } catch (Exception ex) {
-            ex.printStackTrace();
+//            ex.printStackTrace();
         }
         return null;
     }
 
-    private static final long MAX = 18000000;
+    public static final long MAX = 18000000;
 
     public static long convertHours(String ore) {
         try {
             double d1 = Double.parseDouble(ore);
             long tot = Math.round(d1) * 3600000;
-            return tot;
+            if (tot < MAX) {
+                return tot;
+            }
         } catch (Exception e) {
-
         }
         return MAX;
     }

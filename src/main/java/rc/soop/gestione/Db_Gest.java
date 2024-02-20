@@ -178,22 +178,27 @@ public class Db_Gest {
 
     public String formatStatoDomanda(String statoDomanda) {
         try {
-
             switch (statoDomanda) {
-                case "S":
+                case "S" -> {
                     return "NON PROCESSATA";
-                case "R":
+                }
+                case "R" -> {
                     return "RIGETTATA";
-                case "A":
+                }
+                case "A" -> {
                     return "APPROVATA";
-                case "A1":
+                }
+                case "A1" -> {
                     return "CONVENZIONE SA";
-                case "A2":
+                }
+                case "A2" -> {
                     return "SA ATTIVO";
-                case "A3":
+                }
+                case "A3" -> {
                     return "IN ATTESA FIRMA ENM";
-                default:
-                    break;
+                }
+                default -> {
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -300,13 +305,9 @@ public class Db_Gest {
                             String valore1 = rs2.getString("valore").toUpperCase().trim();
 
                             switch (campo) {
-                                case "sedeindirizzo":
-                                    ex1.setSEDELEGALEINDIRIZZO(valore.toUpperCase());
-                                    break;
-                                case "sedecap":
-                                    ex1.setSEDELEGALECAP(valore.toUpperCase());
-                                    break;
-                                case "sedecomune":
+                                case "sedeindirizzo" -> ex1.setSEDELEGALEINDIRIZZO(valore.toUpperCase());
+                                case "sedecap" -> ex1.setSEDELEGALECAP(valore.toUpperCase());
+                                case "sedecomune" -> {
                                     if (!valore.equals("")) {
                                         Comuni_rc c0 = comuni_rc.stream().filter(c1 -> (c1.getId() == parseIntR(valore))).findAny().orElse(null);
                                         if (c0 != null) {
@@ -314,8 +315,8 @@ public class Db_Gest {
                                         }
                                     }
                                     ex1.setSEDELEGALECOMUNE(valore1.toUpperCase());
-                                    break;
-                                case "sedeprov":
+                                }
+                                case "sedeprov" -> {
                                     if (!valore.equals("")) {
                                         Comuni_rc c0 = comuni_rc.stream().filter(c1 -> c1.getCodiceprovincia().equals(valore)).findAny().orElse(null);
                                         if (c0 != null) {
@@ -323,8 +324,8 @@ public class Db_Gest {
                                         }
                                     }
                                     ex1.setSEDELEGALEPROVINCIA(valore1.toUpperCase());
-                                    break;
-                                case "sederegione":
+                                }
+                                case "sederegione" -> {
                                     if (!valore.equals("")) {
                                         Comuni_rc c0 = comuni_rc.stream().filter(c1 -> c1.getCodiceregione().equals(valore)).findAny().orElse(null);
                                         if (c0 != null) {
@@ -332,15 +333,11 @@ public class Db_Gest {
                                         }
                                     }
                                     ex1.setSEDELEGALEREGIONE(valore1.toUpperCase());
-                                    break;
-                                case "email":
-                                    ex1.setEMAIL(valore.toUpperCase());
-                                    break;
-                                case "cell":
-                                    ex1.setTELEFONO(valore.toUpperCase());
-                                    break;
-                                default:
-                                    break;
+                                }
+                                case "email" -> ex1.setEMAIL(valore.toUpperCase());
+                                case "cell" -> ex1.setTELEFONO(valore.toUpperCase());
+                                default -> {
+                                }
                             }
 
                         }
@@ -392,38 +389,38 @@ public class Db_Gest {
                         while (rs3.next()) {
 
                             switch (rs3.getInt("id")) {
-                                case 1:
+                                case 1 -> {
                                     ex1.setNOMEDOCENTE1(rs3.getString("nome").toUpperCase());
                                     ex1.setCOGNOMEDOCENTE1(rs3.getString("cognome").toUpperCase());
                                     ex1.setCFDOCENTE1(rs3.getString("cf").toUpperCase());
                                     ex1.setFASCIAPROPOSTADOCENTE1(rs3.getString("fascia").toUpperCase());
-                                    break;
-                                case 2:
+                                }
+                                case 2 -> {
                                     ex1.setNOMEDOCENTE2(rs3.getString("nome").toUpperCase());
                                     ex1.setCOGNOMEDOCENTE2(rs3.getString("cognome").toUpperCase());
                                     ex1.setCFDOCENTE2(rs3.getString("cf").toUpperCase());
                                     ex1.setFASCIAPROPOSTADOCENTE2(rs3.getString("fascia").toUpperCase());
-                                    break;
-                                case 3:
+                                }
+                                case 3 -> {
                                     ex1.setNOMEDOCENTE3(rs3.getString("nome").toUpperCase());
                                     ex1.setCOGNOMEDOCENTE3(rs3.getString("cognome").toUpperCase());
                                     ex1.setCFDOCENTE3(rs3.getString("cf").toUpperCase());
                                     ex1.setFASCIAPROPOSTADOCENTE3(rs3.getString("fascia").toUpperCase());
-                                    break;
-                                case 4:
+                                }
+                                case 4 -> {
                                     ex1.setNOMEDOCENTE4(rs3.getString("nome").toUpperCase());
                                     ex1.setCOGNOMEDOCENTE4(rs3.getString("cognome").toUpperCase());
                                     ex1.setCFDOCENTE4(rs3.getString("cf").toUpperCase());
                                     ex1.setFASCIAPROPOSTADOCENTE4(rs3.getString("fascia").toUpperCase());
-                                    break;
-                                case 5:
+                                }
+                                case 5 -> {
                                     ex1.setNOMEDOCENTE5(rs3.getString("nome").toUpperCase());
                                     ex1.setCOGNOMEDOCENTE5(rs3.getString("cognome").toUpperCase());
                                     ex1.setCFDOCENTE5(rs3.getString("cf").toUpperCase());
                                     ex1.setFASCIAPROPOSTADOCENTE5(rs3.getString("fascia").toUpperCase());
-                                    break;
-                                default:
-                                    break;
+                                }
+                                default -> {
+                                }
                             }
                         }
 
@@ -712,4 +709,43 @@ public class Db_Gest {
         return out;
     }
 
+    public Long getIdComune(String istat) {
+        try {
+            String sql = "SELECT a.idcomune FROM comuni a WHERE a.istat = ?";
+            try (PreparedStatement ps = this.c.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
+                ps.setString(1, istat);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getLong(1);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            insertTracking("ERROR SYSTEM", estraiEccezione(ex));
+        }
+        return 0L;
+    }
+    
+    
+    public boolean insert_UD_presenza (String completa,String datafine,String datainizio,String fase,String orepresenze,String oretotali,String ud,String idallievi){        
+        try {
+            String ins = "INSERT INTO presenzeudallievi (completa,datafine,datainizio,fase,orepresenze,oretotali,ud,idallievi) VALUES (?,?,?,?,?,?,?,?)";
+            try (PreparedStatement ps = this.c.prepareStatement(ins, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
+                ps.setString(1, completa);
+                ps.setString(2, datafine);
+                ps.setString(3, datainizio);
+                ps.setString(4, fase);
+                ps.setString(5, orepresenze);
+                ps.setString(6, oretotali);
+                ps.setString(7, ud);
+                ps.setString(8, idallievi);
+                ps.execute();
+                return true;
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+//            insertTracking("ERROR SYSTEM", estraiEccezione(ex));
+        }
+        return false;
+    }
 }

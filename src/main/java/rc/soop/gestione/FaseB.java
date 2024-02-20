@@ -57,14 +57,12 @@ import static rc.soop.exe.Utils.timestampITAcomplete;
 import static rc.soop.exe.Utils.timestampSQL;
 import static rc.soop.gestione.Constant.calcoladurata;
 import static rc.soop.gestione.Constant.checkPDF;
-import static rc.soop.gestione.Constant.convertHours;
 import static rc.soop.gestione.Constant.convertPDFA;
 import static rc.soop.gestione.Constant.convertTS_Italy;
 import static rc.soop.gestione.Constant.format;
 import static rc.soop.gestione.Constant.getIdUser;
 import static rc.soop.gestione.Constant.printbarcode;
 import static rc.soop.gestione.Create.gestisciorerendicontabili;
-import static rc.soop.gestione.Create.manage;
 import static rc.soop.gestione.Toscana_gestione.log;
 
 /**
@@ -72,11 +70,11 @@ import static rc.soop.gestione.Toscana_gestione.log;
  * @author rcosco
  */
 public class FaseB {
-
+    
     public String host;
-
+    
     public FaseB(boolean test) {
-
+        
         this.host = conf.getString("db.host") + ":3306/enm_gestione_toscana_prod";
         if (test) {
             this.host = conf.getString("db.host") + ":3306/enm_gestione_toscana";
@@ -152,15 +150,15 @@ public class FaseB {
                             registro.add(rc);
                         }
                     }
-
+                    
                     Cell cell0 = new Cell(1, 8);
                     cell0.add(new Paragraph("YES I START UP TOSCANA").addStyle(bold));
                     cell0.add(new Paragraph("Formarsi per diventare imprenditore/imprenditrice in Toscana").addStyle(bold));
                     cell0.add(new Paragraph("CUP D54D23002380007").addStyle(bold));
-
+                    
                     cell0.setTextAlignment(TextAlignment.CENTER);
                     table.addCell(cell0);
-
+                    
                     Cell cell = new Cell(1, 8);
                     cell.add(new Paragraph(" ").addStyle(normal));
                     cell.setTextAlignment(TextAlignment.CENTER);
@@ -185,9 +183,9 @@ public class FaseB {
                     cell.add(new Paragraph(datisa[1]).addStyle(normal));
                     cell.setBackgroundColor(lightgrey);
                     table.addCell(cell);
-
+                    
                     if (!registro.isEmpty()) {
-
+                        
                         Registro_completo primo = registro.get(0);
                         cell = new Cell();
                         cell.add(new Paragraph("DATA").addStyle(bold));
@@ -223,7 +221,7 @@ public class FaseB {
                         cell = new Cell(1, 2);
                         cell.add(new Paragraph("NUMERO GRUPPO FASE B").addStyle(bold));
                         table.addCell(cell);
-
+                        
                         cell = new Cell();
                         cell.add(new Paragraph(String.valueOf(primo.getNumpartecipanti())).addStyle(normal));
                         cell.setBackgroundColor(lightgrey);
@@ -292,9 +290,9 @@ public class FaseB {
                             cel3.add(new Paragraph(r1.getNome()).addStyle(normal));
                             table.addCell(cel3);
                             cel3 = new Cell();
-
+                            
                             String ruolo = r1.getRuolo();
-
+                            
                             cel3.add(new Paragraph(ruolo).addStyle(normal));
                             table.addCell(cel3);
                             cel3 = new Cell();
@@ -333,16 +331,16 @@ public class FaseB {
                     doc.add(new AreaBreak(AreaBreakType.NEXT_PAGE));
                 }
                 indice.addAndGet(1);
-
+                
             });
             db1.closeDB();
-
+            
             if (indice.get() > 1) {
-
+                
                 doc.close();
                 pdfDoc.close();
                 pw0.close();
-
+                
                 String qrcontent = "ID " + idpr + " REGISTRO FASE B - AGGIORNATO IL " + now;
                 File out1 = new File(StringUtils.replace(out0.getPath(), ".pdf", "_qr.pdf"));
                 try (PdfReader p2 = new PdfReader(out0); PdfWriter p2w = new PdfWriter(out1); PdfDocument pdfDoc1 = new PdfDocument(p2, p2w);) {
@@ -354,7 +352,7 @@ public class FaseB {
                 if (checkPDF(out2)) {
                     out0.deleteOnExit();
                     out1.deleteOnExit();
-
+                    
                     createDir(path_destinazione);
                     File pdf_final = new File(path_destinazione + File.separator + "Registro Fase B_" + now1 + ".pdf");
                     FileUtils.copyFile(out2, pdf_final);
@@ -377,7 +375,7 @@ public class FaseB {
                                         ps1.setInt(3, 32);
                                         ps1.execute();
                                     }
-
+                                    
                                 }
                             }
                             db3.closeDB();
@@ -386,16 +384,16 @@ public class FaseB {
                         }
                         return pdf_final;
                     }
-
+                    
                 }
             }
-
+            
         } catch (Exception ex) {
             log.severe(Constant.estraiEccezione(ex));
         }
         return null;
     }
-
+    
     public List<Lezione> calcolaegeneraregistrofaseb(int idpr, String host, boolean printing, boolean save, boolean today) {
         List<Lezione> calendar = new ArrayList<>();
         try {
@@ -406,9 +404,9 @@ public class FaseB {
             String[] datisa = db0.sa_cip(idpr);
             List<Utenti> docenti = db0.list_Docenti_noAccento(idpr);
             List<Utenti> docenti_corretti = db0.list_Docenti(idpr);
-
+            
             List<Utenti> allievi_corretti = db0.list_Allievi(idpr);
-
+            
             String sql0 = "SELECT nomestanza FROM fad_multi WHERE idprogetti_formativi=" + idpr;
             try (Statement st0 = db0.getConnection().createStatement(); ResultSet rs0 = st0.executeQuery(sql0)) {    //STANZA
                 if (printing) {
@@ -426,25 +424,23 @@ public class FaseB {
                 }
             }
             db0.closeDB();
-
+            
             if (nomestanza.toString().trim().equals("")) {
                 log.log(Level.SEVERE, "{0} NESSUNA STANZA TROVATA", idpr);
                 return null;
             } else {
                 Db_Gest db1 = new Db_Gest(host);
-
-                manage(db1, idpr);
-
+                
                 String sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore,lm.gruppo_faseB,f.nomestanza,mp.id_modello  FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud, fad_multi f "
                         + "    WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario AND ud.codice=lc.codice_ud AND f.idprogetti_formativi=mp.id_progettoformativo AND f.numerocorso=lm.gruppo_faseB "
                         + " AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase B' AND lm.giorno < CURDATE() ORDER BY lm.gruppo_faseB,lc.lezione,lm.orario_start";
-
+                
                 if (today) {
                     sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore,lm.gruppo_faseB,f.nomestanza,mp.id_modello  FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud, fad_multi f "
                             + " WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario AND ud.codice=lc.codice_ud AND f.idprogetti_formativi=mp.id_progettoformativo AND f.numerocorso=lm.gruppo_faseB "
                             + " AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase B' AND lm.giorno <= CURDATE() ORDER BY lm.gruppo_faseB,lc.lezione,lm.orario_start";
                 }
-
+                
                 try (Statement st1 = db1.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
                     if (printing) {
                         log.log(Level.INFO, "2) {0}", sql1);
@@ -463,7 +459,7 @@ public class FaseB {
                     }
                 }
                 db1.closeDB();
-
+                
                 for (int i = 0; i < calendartemp.size(); i++) {
                     Lezione cal = calendartemp.get(i);
                     Lezione cal2;
@@ -478,7 +474,7 @@ public class FaseB {
                     } catch (Exception e) {
                         cal3 = null;
                     }
-
+                    
                     boolean hasnext = cal2 != null;
                     if (hasnext) {
                         if (cal.getGiorno().equals(cal2.getGiorno()) && cal.getGruppo() == cal2.getGruppo()) {
@@ -490,11 +486,13 @@ public class FaseB {
                                 }
                             });
                             double ore = Double.parseDouble(cal.getOre()) + Double.parseDouble(cal2.getOre());
-                            calendar.add(new Lezione(cal.getId(), doc1,
+                            
+                            Lezione l2 = new Lezione(cal.getId(), doc1,
                                     cal.getGiorno(), cal.getStart(), cal2.getEnd(),
                                     cal.getCodiceud() + "_" + cal2.getCodiceud(),
-                                    Constant.doubleformat.format(ore), cal.getGruppo(), cal.getNomestanza()));
-
+                                    Constant.doubleformat.format(ore), cal.getGruppo(), cal.getNomestanza());
+                            l2.setMpid_modello(cal.getMpid_modello());
+                            calendar.add(l2);
                         } else {
                             if (cal3 == null || !cal3.getGiorno().equals(cal.getGiorno())) {
                                 calendar.add(cal);
@@ -505,7 +503,7 @@ public class FaseB {
                             calendar.add(cal);
                         } else {
                             if (cal.getGiorno().equals(cal3.getGiorno()) && cal.getGruppo() == cal3.getGruppo()) {
-
+                                
                             } else {
                                 calendar.add(cal);
                             }
@@ -545,7 +543,7 @@ public class FaseB {
                                 LinkedList<Presenti> report = new LinkedList<>();
                                 List<Track> tracking = new ArrayList<>();
                                 List<Items> idutenti = new ArrayList<>();
-
+                                
                                 List<Utenti> tutti = new ArrayList<>();
                                 try {
                                     String sql2 = "SELECT type,action,date FROM fad_track f WHERE f.room = '" + cal.getNomestanza().trim() + "' "
@@ -555,7 +553,7 @@ public class FaseB {
                                         if (printing) {
                                             log.log(Level.INFO, "4) {0}", sql2);
                                         }
-
+                                        
                                         while (rs2.next()) {
                                             String tipoazione = rs2.getString(1);
                                             String action = rs2.getString(2);
@@ -730,7 +728,7 @@ public class FaseB {
                                         StringBuilder loginvalue = new StringBuilder();
                                         StringBuilder logoutvalue = new StringBuilder();
                                         LinkedList<Presenti> userp_final = new LinkedList<>();
-
+                                        
                                         AtomicInteger ind = new AtomicInteger(0);
                                         //OK
                                         userp.forEach(ba1 -> {
@@ -760,7 +758,7 @@ public class FaseB {
                                             }
                                             ind.addAndGet(1);
                                         });
-
+                                        
                                         if ((userp_final.size() % 2) != 0) {
                                             if (userp_final.getLast().isLogout()) {
                                                 userp_final.removeLast();
@@ -774,7 +772,7 @@ public class FaseB {
                                                         Presenti pr1 = new Presenti(userp_final.getLast().getNome(), userp_final.getLast().getCognome(),
                                                                 userp_final.getLast().getCf(), userp_final.getLast().getEmail(), userp_final.getLast().getRuolo());
                                                         pr1.setLogout(true);
-
+                                                        
                                                         pr1.setDate(cal.getGiorno() + " " + cal.getEnd());
                                                         pr1.setIdfad(userp_final.getLast().getIdfad());
                                                         userp_final.add(pr1);
@@ -806,10 +804,10 @@ public class FaseB {
                                                     logoutvalue.append(ba1.getDate().split(" ")[1].split("\\.")[0]).append("\n");
                                                 }
                                             });
-
+                                            
                                             long duratalogin = millis.get();
                                             String duratacollegamento = calcoladurata(duratalogin);
-
+                                            
                                             if (selected.getRuolo().equals("DOCENTE")) {
                                                 List<String> login_S = Splitter.on("\n").splitToList(loginvalue.toString());
                                                 List<String> logout_S = Splitter.on("\n").splitToList(logoutvalue.toString());
@@ -817,8 +815,12 @@ public class FaseB {
                                                     inizio.append(login_S.get(0));
                                                     fine.append(logout_S.get(logout_S.size() - 2));
                                                     AtomicLong millisdurata = new AtomicLong(0);
-                                                    millisdurata.addAndGet(-format("2021-01-01 " + login_S.get(0), timestampSQL).getMillis());
-                                                    millisdurata.addAndGet(format("2021-01-01 " + logout_S.get(logout_S.size() - 2), timestampSQL).getMillis());
+                                                    try {
+                                                        millisdurata.addAndGet(-format("2021-01-01 " + login_S.get(0), timestampSQL).getMillis());
+                                                        millisdurata.addAndGet(format("2021-01-01 " + logout_S.get(logout_S.size() - 2), timestampSQL).getMillis());
+                                                    } catch (Exception e) {
+                                                        millisdurata.set(0L);
+                                                    }
                                                     long duratalogindurata = (millisdurata.get());
                                                     durata.set(duratalogindurata);
                                                 }
@@ -834,7 +836,6 @@ public class FaseB {
                                     }
                                 });
                                 
-                                
                                 List<Presenti> solodocenti = report.stream().filter(r1 -> r1.getRuolo().equals("DOCENTE")).sorted(Comparator.comparing(a -> a.getOradilogin())).collect(Collectors.toList());
                                 for (Presenti ps : solodocenti) {
                                     List<String> login_S = Splitter.on("\n").splitToList(ps.getOradilogin());
@@ -849,18 +850,23 @@ public class FaseB {
                                             fine.setLength(0);
                                             fine.append(logout_S.get(logout_S.size() - 1));
                                         }
-
+                                        
                                     }
                                 }
                                 
                                 AtomicLong millisdurata = new AtomicLong(0);
-                                millisdurata.addAndGet(-format("2021-01-01 " + StringUtils.substring(inizio.toString(), 0, 8), timestampSQL).getMillis());
-                                millisdurata.addAndGet(format("2021-01-01 " + StringUtils.substring(fine.toString(), 0, 8), timestampSQL).getMillis());
+                                try {
+                                    millisdurata.addAndGet(-format("2021-01-01 " + StringUtils.substring(inizio.toString(), 0, 8), timestampSQL).getMillis());
+                                    millisdurata.addAndGet(format("2021-01-01 " + StringUtils.substring(fine.toString(), 0, 8), timestampSQL).getMillis());
+                                    
+                                } catch (Exception e) {
+                                    millisdurata.set(0L);
+                                }
                                 long duratalogindurata = (millisdurata.get());
                                 durata.set(duratalogindurata);
-
+                                
                                 gestisciorerendicontabili(report, idpr, host, cal);
-
+                                
                                 report.forEach(r1 -> {
                                     try {
                                         String ins = "INSERT INTO registro_completo (idprogetti_formativi,idsoggetti_attuatori,cip,data,idriunione,numpartecipanti,orainizio,orafine,durata,nud,fase,gruppofaseb,ruolo,cognome,nome,email,orelogin,orelogout,totaleore,totaleorerendicontabili,idutente) "
@@ -893,13 +899,13 @@ public class FaseB {
                                             } else {
 //                                                Create.log.info(r1.toString());
                                             }
-
+                                            
                                         }
                                     } catch (Exception ex) {
                                         log.severe(Constant.estraiEccezione(ex));
                                     }
                                 });
-
+                                
                             } else {
                                 log.log(Level.WARNING, "{0} REGISTRO {1} {2} GIA'' PRESENTE.", new Object[]{idpr, day, idriuunione});
                             }
@@ -907,17 +913,17 @@ public class FaseB {
                 );
                 db2.closeDB();
             }
-
+            
         } catch (Exception ex) {
             log.severe(Constant.estraiEccezione(ex));
         }
         return calendar;
     }
-
+    
     public String getHost() {
         return host;
     }
-
+    
     public void setHost(String host) {
         this.host = host;
     }
