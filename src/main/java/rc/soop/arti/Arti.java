@@ -71,8 +71,8 @@ public class Arti {
 
     }
 
-    public static ResponseStatoIscrizione invia(boolean testing, String codiceAttivita, String codiceFiscale,
-            String statoarti, String dataInizioCorso, String dataFineCorso) {
+    private static ResponseStatoIscrizione invia(boolean testing, String codiceAttivita, String codiceFiscale,
+            String statoarti, String descrizionestatoarti, String dataInizioCorso, String dataFineCorso) {
         try {
             FaseA FA = new FaseA(testing);
             String datenow = new DateTime().toString("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -84,7 +84,7 @@ public class Arti {
             jo.addProperty("dataFineCorso", dataFineCorso == null ? datenow : dataFineCorso);
             jo.addProperty("dataInizioCorso", dataInizioCorso == null ? datenow : dataInizioCorso);
             jo.addProperty("dataStato", datenow);
-            jo.addProperty("descrizioneStato", statoarti);
+            jo.addProperty("descrizioneStato", descrizionestatoarti);
             jo.addProperty("stato", statoarti);
 
             log.log(Level.WARNING, "REQUEST: {0}", jo.toString());
@@ -121,24 +121,23 @@ public class Arti {
         FaseA FA = new FaseA(testing);
 
         Db_Gest db0 = new Db_Gest(FA.getHost());
-
-        //AMMESSI
+//////////        AMMESSI
         String sql_INCORSO = "SELECT a.codicefiscale,p.cip,a.idallievi,p.start,p.end FROM allievi a, progetti_formativi p WHERE a.idprogetti_formativi=p.idprogetti_formativi "
                 + "AND  a.id_statopartecipazione='15' AND (a.esito IS NULL OR a.esito NOT IN('AMMESSO_INIZIO_CORSO','AMMESSO_DOPO_INIZIO_CORSO')) ORDER BY a.codicefiscale;";
-        String AMMESSO_INIZIO_CORSO = "AMMESSO_INIZIO_CORSO";
+
         try (Statement st1 = db0.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql_INCORSO)) {
+            String STATOARTI = "AMMESSO_INIZIO_CORSO";
             while (rs1.next()) {
                 String CIP = rs1.getString("p.cip");
                 String CF = rs1.getString("a.codicefiscale");
                 String dataInizioCorso = rs1.getString("p.start") + "T00:00:00.000Z";
                 String dataFineCorso = rs1.getString("p.end") + "T00:00:00.000Z";
-                ResponseStatoIscrizione resp = invia(testing, CIP, CF, AMMESSO_INIZIO_CORSO, dataInizioCorso, dataFineCorso);
+                ResponseStatoIscrizione resp = invia(testing, CIP, CF, STATOARTI, STATOARTI, dataInizioCorso, dataFineCorso);
                 if (resp.getStatus().equals("success")) {
-                    //UPDATE
-                    String update = "UPDATE allievi SET esito='" + AMMESSO_INIZIO_CORSO + "' WHERE idallievi = " + rs1.getString("A.idallievi");
+                    String update = "UPDATE allievi SET esito='" + STATOARTI + "' WHERE idallievi = " + rs1.getString("A.idallievi");
                     try (Statement st2 = db0.getConnection().createStatement()) {
                         boolean ok = st2.executeUpdate(update) > 0;
-                        log.log(Level.INFO, "{0} () {1}: {2} - {3}", new Object[]{CIP, CF, update, ok});
+                        log.log(Level.INFO, "{0} - {1} ; {2} : {3} = {4}", new Object[]{STATOARTI, CF, CIP, update, ok});
                     }
                 }
             }
@@ -146,21 +145,20 @@ public class Arti {
         } catch (Exception ex) {
             log.severe(estraiEccezione(ex));
         }
-        //RITIRATI PRIMA AVVIO
+////////////        RITIRATI PRIMA AVVIO
         String sql_NOSTART = "SELECT a.codicefiscale,a.esito,a.idallievi FROM allievi a WHERE a.id_statopartecipazione='11' "
                 + "AND (a.esito IS NULL OR a.esito NOT IN('AMMESSO_INIZIO_CORSO','AMMESSO_DOPO_INIZIO_CORSO','NON_AMMESSO')) ORDER BY a.codicefiscale";
-        String NON_AMMESSO = "NON_AMMESSO";
         try (Statement st1 = db0.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql_NOSTART)) {
+            String STATOARTI = "NON_AMMESSO";
+
             while (rs1.next()) {
                 String CF = rs1.getString("a.codicefiscale");
-//                System.out.println(CF + ": " + NON_AMMESSO);
-                ResponseStatoIscrizione resp = invia(testing, null, CF, NON_AMMESSO, null, null);
+                ResponseStatoIscrizione resp = invia(testing, null, CF, STATOARTI, STATOARTI, null, null);
                 if (resp.getStatus().equals("success")) {
-//                    //UPDATE
-                    String update = "UPDATE allievi SET esito='" + NON_AMMESSO + "' WHERE idallievi = " + rs1.getString("a.idallievi");
+                    String update = "UPDATE allievi SET esito='" + STATOARTI + "' WHERE idallievi = " + rs1.getString("a.idallievi");
                     try (Statement st2 = db0.getConnection().createStatement()) {
                         boolean ok = st2.executeUpdate(update) > 0;
-                        log.log(Level.INFO, "{0}: {1} - {2}", new Object[]{CF, update, ok});
+                        log.log(Level.INFO, "{0} - {1} : {2} = {3}", new Object[]{STATOARTI, CF, update, ok});
                     }
                 }
             }
@@ -168,8 +166,38 @@ public class Arti {
             log.severe(estraiEccezione(ex));
         }
 
+        //RITIRATI GIUSTIFICATI E NON
+        String sql_RITIRATO = "SELECT a.codicefiscale,a.esito,a.idallievi,a.id_statopartecipazione,p.cip,p.start,p.end FROM allievi a, progetti_formativi p WHERE a.idprogetti_formativi=p.idprogetti_formativi AND a.id_statopartecipazione in (16,17) "
+                + "AND (a.esito IS NULL OR a.esito NOT IN('RITIRATO')) ORDER BY a.codicefiscale";
+
+        try (Statement st1 = db0.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql_RITIRATO)) {
+            while (rs1.next()) {
+
+                String CIP = rs1.getString("p.cip");
+                String dataInizioCorso = rs1.getString("p.start") + "T00:00:00.000Z";
+                String dataFineCorso = rs1.getString("p.end") + "T00:00:00.000Z";
+                String CF = rs1.getString("a.codicefiscale");
+                String STATOENM = rs1.getString("a.id_statopartecipazione");
+                String STATOARTI = "RITIRATO";
+                String DESCRSTATOARTI = STATOENM.equals("16") ? "ALTRO_COMPROVATO_IMPEDIMENTO_OGGETTIVO_E_O_CAUSA_DI_FORZA_MAGGIORE" : "RIFIUTO_NON_GIUSTIFICATO";
+                ResponseStatoIscrizione resp = invia(testing, CIP, CF, STATOARTI, DESCRSTATOARTI, dataInizioCorso, dataFineCorso);
+                if (resp.getStatus().equals("success")) {
+                    String update = "UPDATE allievi SET esito='" + STATOARTI + "' WHERE idallievi = " + rs1.getString("a.idallievi");
+                    try (Statement st2 = db0.getConnection().createStatement()) {
+                        boolean ok = st2.executeUpdate(update) > 0;
+                        log.log(Level.INFO, "{0} - {1} ; {2} : {3} = {4}", new Object[]{STATOARTI, CF, CIP, update, ok});
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
+        }
         db0.closeDB();
 
     }
+
+//    public static void main(String[] args) {
+//        cambiostato_allievo(false);
+//    }
 
 }

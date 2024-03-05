@@ -137,6 +137,15 @@ public class MainSelector {
                 }
                 break;
             }
+            case 7 -> { //MAINTENANCE - MODELLO 0
+                try {
+                    log.info("START MODELLO 0");
+                     tg.update_modello0();
+                    log.info("FINE MODELLO 0");
+                } catch (Exception e) {
+                    log.severe(estraiEccezione(e));
+                }
+            }
             default -> { //NO ACTION
                 break;
             }

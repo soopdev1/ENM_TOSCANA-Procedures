@@ -394,6 +394,92 @@ public class FaseB {
         return null;
     }
     
+    public List<Lezione> generaregistrofasea_PR(int idpr, String host, boolean printing, boolean save, boolean today) {
+        List<Lezione> calendar = new ArrayList<>();
+        List<Lezione> calendartemp = new ArrayList<>();
+        try {
+        
+        Db_Gest db1 = new Db_Gest(host);
+                
+                String sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore,lm.gruppo_faseB,f.nomestanza,mp.id_modello  FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud, fad_multi f "
+                        + " WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario AND ud.codice=lc.codice_ud AND f.idprogetti_formativi=mp.id_progettoformativo AND f.numerocorso=lm.gruppo_faseB "
+                        + " AND lm.tipolez='P' AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase B' AND lm.giorno < CURDATE() ORDER BY lm.gruppo_faseB,lc.lezione,lm.orario_start";
+                
+                try (Statement st1 = db1.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
+                    if (printing) {
+                        log.log(Level.INFO, "2) {0}", sql1);
+                    }
+                    while (rs1.next()) {
+                        
+                        Lezione temp1 = new Lezione(rs1.getInt("lc.lezione"),
+                                rs1.getInt("lm.id_docente"),
+                                rs1.getString("lm.giorno"), rs1.getString("lm.orario_start"), rs1.getString("lm.orario_end"),
+                                rs1.getString("ud.codice"), rs1.getString("lc.ore"), rs1.getInt("lm.gruppo_faseB"), null);
+                        temp1.setMpid_modello(rs1.getInt("mp.id_modello"));
+                        calendartemp.add(temp1);
+                    }
+                    if (printing) {
+                        log.log(Level.INFO, "2) {0}", calendartemp.size());
+                    }
+                }
+                db1.closeDB();
+                
+                for (int i = 0; i < calendartemp.size(); i++) {
+                    Lezione cal = calendartemp.get(i);
+                    Lezione cal2;
+                    try {
+                        cal2 = calendartemp.get(i + 1);
+                    } catch (Exception e) {
+                        cal2 = null;
+                    }
+                    Lezione cal3;
+                    try {
+                        cal3 = calendartemp.get(i - 1);
+                    } catch (Exception e) {
+                        cal3 = null;
+                    }
+                    
+                    boolean hasnext = cal2 != null;
+                    if (hasnext) {
+                        if (cal.getGiorno().equals(cal2.getGiorno()) && cal.getGruppo() == cal2.getGruppo()) {
+                            List<Integer> doc1 = new ArrayList<>();
+                            doc1.addAll(cal.getDocente());
+                            cal2.getDocente().forEach(d1 -> {
+                                if (!doc1.contains(d1)) {
+                                    doc1.add(d1);
+                                }
+                            });
+                            double ore = Double.parseDouble(cal.getOre()) + Double.parseDouble(cal2.getOre());
+                            
+                            Lezione l2 = new Lezione(cal.getId(), doc1,
+                                    cal.getGiorno(), cal.getStart(), cal2.getEnd(),
+                                    cal.getCodiceud() + "_" + cal2.getCodiceud(),
+                                    Constant.doubleformat.format(ore), cal.getGruppo(), null);
+                            l2.setMpid_modello(cal.getMpid_modello());
+                            calendar.add(l2);
+                        } else {
+                            if (cal3 == null || !cal3.getGiorno().equals(cal.getGiorno())) {
+                                calendar.add(cal);
+                            }
+                        }
+                    } else {
+                        if (i == 0) {
+                            calendar.add(cal);
+                        } else {
+                            if (cal.getGiorno().equals(cal3.getGiorno()) && cal.getGruppo() == cal3.getGruppo()) {
+                                
+                            } else {
+                                calendar.add(cal);
+                            }
+                        }
+                    }
+                }
+        } catch (Exception ex) {
+            log.severe(Constant.estraiEccezione(ex));
+        }
+        return calendar;
+    }
+    
     public List<Lezione> calcolaegeneraregistrofaseb(int idpr, String host, boolean printing, boolean save, boolean today) {
         List<Lezione> calendar = new ArrayList<>();
         try {
@@ -433,12 +519,12 @@ public class FaseB {
                 
                 String sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore,lm.gruppo_faseB,f.nomestanza,mp.id_modello  FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud, fad_multi f "
                         + "    WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario AND ud.codice=lc.codice_ud AND f.idprogetti_formativi=mp.id_progettoformativo AND f.numerocorso=lm.gruppo_faseB "
-                        + " AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase B' AND lm.giorno < CURDATE() ORDER BY lm.gruppo_faseB,lc.lezione,lm.orario_start";
+                        + " AND lm.tipolez='F' AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase B' AND lm.giorno < CURDATE() ORDER BY lm.gruppo_faseB,lc.lezione,lm.orario_start";
                 
                 if (today) {
                     sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore,lm.gruppo_faseB,f.nomestanza,mp.id_modello  FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud, fad_multi f "
                             + " WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario AND ud.codice=lc.codice_ud AND f.idprogetti_formativi=mp.id_progettoformativo AND f.numerocorso=lm.gruppo_faseB "
-                            + " AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase B' AND lm.giorno <= CURDATE() ORDER BY lm.gruppo_faseB,lc.lezione,lm.orario_start";
+                            + " AND lm.tipolez='F' AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase B' AND lm.giorno <= CURDATE() ORDER BY lm.gruppo_faseB,lc.lezione,lm.orario_start";
                 }
                 
                 try (Statement st1 = db1.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {

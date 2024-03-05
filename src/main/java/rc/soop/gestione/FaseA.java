@@ -83,14 +83,6 @@ public class FaseA {
         log.log(Level.INFO, "HOST: {0}", this.host);
     }
 
-//    public static void main(String[] args) {
-//        FaseA fa = new FaseA(false);
-//        
-//        List<Lezione> l = fa.calcolaegeneraregistrofasea(82, fa.getHost(), false, false,false);
-//        
-//        File f = fa.registro_aula_FaseA(82, fa.getHost(), false, l);
-//
-//    }
     public File registro_aula_FaseA(int idpr, String host, boolean save, List<Lezione> calendar) {
         try {
             Db_Gest db0 = new Db_Gest(host);
@@ -754,6 +746,92 @@ public class FaseA {
         return null;
     }
 
+    public List<Lezione> generaregistrofasea_PR(int idpr, String host, boolean printing, boolean save, boolean today) {
+        List<Lezione> calendar = new ArrayList<>();
+        List<Lezione> calendartemp = new ArrayList<>();
+        try {
+            Db_Gest db1 = new Db_Gest(host);
+
+            String sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore,mp.id_modello FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud "
+                    + " WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario AND ud.codice=lc.codice_ud "
+                    + " AND lm.tipolez='P' AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase A' AND lm.giorno < CURDATE() ORDER BY lc.lezione,lm.orario_start";
+
+            try (Statement st1 = db1.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
+                if (printing) {
+                    log.log(Level.INFO, "2) {0}", sql1);
+                }
+                while (rs1.next()) {
+
+                    Lezione temp1 = new Lezione(rs1.getInt("lc.lezione"),
+                            rs1.getInt("lm.id_docente"),
+                            rs1.getString("lm.giorno"), rs1.getString("lm.orario_start"), rs1.getString("lm.orario_end"),
+                            rs1.getString("ud.codice"), rs1.getString("lc.ore"), 1, null);
+                    temp1.setMpid_modello(rs1.getInt("mp.id_modello"));
+                    calendartemp.add(temp1);
+                }
+                if (printing) {
+                    log.log(Level.INFO, "2) {0}", calendartemp.size());
+                }
+            }
+
+            db1.closeDB();
+
+            for (int i = 0; i < calendartemp.size(); i++) {
+                Lezione cal = calendartemp.get(i);
+                Lezione cal2;
+                try {
+                    cal2 = calendartemp.get(i + 1);
+                } catch (Exception e) {
+                    cal2 = null;
+                }
+                Lezione cal3;
+                try {
+                    cal3 = calendartemp.get(i - 1);
+                } catch (Exception e) {
+                    cal3 = null;
+                }
+
+                boolean hasnext = cal2 != null;
+                if (hasnext) {
+                    if (cal.getGiorno().equals(cal2.getGiorno())) {
+                        List<Integer> doc1 = new ArrayList<>();
+                        doc1.addAll(cal.getDocente());
+                        cal2.getDocente().forEach(d1 -> {
+                            if (!doc1.contains(d1)) {
+                                doc1.add(d1);
+                            }
+                        });
+                        double ore = Double.parseDouble(cal.getOre()) + Double.parseDouble(cal2.getOre());
+
+                        Lezione l2temp = new Lezione(cal.getId(), doc1,
+                                cal.getGiorno(), cal.getStart(), cal2.getEnd(),
+                                cal.getCodiceud() + "_" + cal2.getCodiceud(),
+                                Constant.doubleformat.format(ore), cal.getGruppo(), null);
+                        l2temp.setMpid_modello(cal.getMpid_modello());
+                        calendar.add(l2temp);
+                    } else {
+                        if (cal3 == null || !cal3.getGiorno().equals(cal.getGiorno())) {
+                            calendar.add(cal);
+                        }
+                    }
+                } else {
+                    if (i == 0) {
+                        calendar.add(cal);
+                    } else {
+                        if (!cal.getGiorno().equals(cal3.getGiorno())) {
+                            calendar.add(cal);
+                        }
+                    }
+                }
+            }
+            
+
+        } catch (Exception ex) {
+            log.severe(Constant.estraiEccezione(ex));
+        }
+        return calendar;
+    }
+
     public List<Lezione> calcolaegeneraregistrofasea(int idpr, String host, boolean printing, boolean save, boolean today) {
         List<Lezione> calendar = new ArrayList<>();
         try {
@@ -925,8 +1003,8 @@ public class FaseA {
                                                             int idallievo = Integer.parseInt(azione.split(";")[1]);
                                                             Utenti u = allievi.stream().filter(al -> al.getId() == idallievo).findFirst().get();
                                                             azione = azioni.stream().filter(az -> az.getCod().equalsIgnoreCase(tipoazione)).findFirst().get().getDescrizione() + " -> "
-                                                                    + u.getNome() + " "
-                                                                    + u.getCognome();
+                                                            + u.getNome() + " "
+                                                            + u.getCognome();
                                                             Track t1 = new Track("USER", tipoazione, azione, date, day, null);
                                                             tracking.add(t1);
                                                             tutti.add(u);
@@ -938,8 +1016,8 @@ public class FaseA {
                                                             int iddocente = Integer.parseInt(azione.split(";")[1]);
                                                             Utenti u = docenti.stream().filter(al -> al.getId() == iddocente).findFirst().get();
                                                             azione = azioni.stream().filter(az -> az.getCod().equalsIgnoreCase(tipoazione)).findFirst().get().getDescrizione() + " -> "
-                                                                    + u.getNome() + " "
-                                                                    + u.getCognome();
+                                                            + u.getNome() + " "
+                                                            + u.getCognome();
                                                             Track t1 = new Track("DOCENTE", tipoazione, azione, date, day, null);
                                                             tracking.add(t1);
                                                             tutti.add(u);
@@ -1009,7 +1087,7 @@ public class FaseA {
 //                                                } catch (Exception ex) {
 //                                                    Create.log.severe(Constant.estraiEccezione(ex));
 //                                                }
-                                                                                    }
+                                        }
                                     }
                                 } catch (Exception ex) {
                                     log.severe(Constant.estraiEccezione(ex));
@@ -1165,7 +1243,7 @@ public class FaseA {
 
                                     }
                                 }
-                                
+
                                 AtomicLong millisdurata = new AtomicLong(0);
                                 millisdurata.addAndGet(-format("2021-01-01 " + StringUtils.substring(inizio.toString(), 0, 8), timestampSQL).getMillis());
                                 millisdurata.addAndGet(format("2021-01-01 " + StringUtils.substring(fine.toString(), 0, 8), timestampSQL).getMillis());

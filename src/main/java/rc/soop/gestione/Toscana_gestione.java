@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import static org.apache.commons.lang3.StringUtils.remove;
@@ -38,6 +39,7 @@ import static rc.soop.exe.Utils.getCell;
 import static rc.soop.exe.Utils.sdfITA;
 import static rc.soop.exe.Utils.setCell;
 import static rc.soop.exe.Utils.timestamp;
+import static rc.soop.gestione.Constant.checkPDF;
 import static rc.soop.gestione.SendMailJet.sendMail;
 
 public class Toscana_gestione {
@@ -65,9 +67,9 @@ public class Toscana_gestione {
         try (Statement st1 = db1.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
             while (rs1.next()) {
                 int idallievi = rs1.getInt(1);
-                String sql2 = "SELECT r.totaleorerendicontabili,r.fase FROM registro_completo r WHERE r.idutente='" 
+                String sql2 = "SELECT r.totaleorerendicontabili,r.fase FROM registro_completo r WHERE r.idutente='"
                         + idallievi + "' AND r.ruolo='ALLIEVO'";
-                String sql3 = "SELECT a.durataconvalidata FROM presenzelezioniallievi a WHERE a.idallievi = '" 
+                String sql3 = "SELECT a.durataconvalidata FROM presenzelezioniallievi a WHERE a.idallievi = '"
                         + idallievi + "' AND a.convalidata=1";
 //                String sql3 = "SELECT p.durataconvalidata,z.codice_ud FROM presenzelezioniallievi p, presenzelezioni l, lezione_calendario z "
 //                        + "WHERE p.idallievi = '" + idallievi + "' AND p.convalidata=1 AND l.idpresenzelezioni=p.idpresenzelezioni "
@@ -93,24 +95,17 @@ public class Toscana_gestione {
 
                 double res = presenze / 3600000.00;
 
-                String upd4 = "UPDATE allievi SET importo = '" + res + "' WHERE idallievi='" + idallievi + "'";
+                String upd4 = "UPDATE allievi SET importo = '" + res + "', orec_totali = '" + res + "' WHERE idallievi='" + idallievi + "'";
 
                 try (Statement st4 = db1.getConnection().createStatement()) {
                     st4.executeUpdate(upd4);
                 }
                 
-                System.out.println(sql1);
-                System.out.println(sql2);
-                System.out.println(sql3);
-                System.out.println(upd4);
-
             }
-
         } catch (Exception ex1) {
             log.severe(estraiEccezione(ex1));
         }
         db1.closeDB();
-
         return report;
     }
 
@@ -1190,25 +1185,27 @@ public class Toscana_gestione {
                         String rendicontato = "NO";
                         if (rs0.getInt("pf.extract") != 0) {
                             rendicontato = switch (rs0.getInt("pf.extract")) {
-                                case 1 -> "SI";
-                                case 2 -> "IN ATTESA";
-                                default -> "NO";
+                                case 1 ->
+                                    "SI";
+                                case 2 ->
+                                    "IN ATTESA";
+                                default ->
+                                    "NO";
                             };
                         }
-                        
-                        
+
                         XSSFRow row = getRow(sh2, indiceriga2.get());
                         indiceriga2.addAndGet(1);
-                        
+
                         AtomicInteger indicecolonna = new AtomicInteger(0);
                         setCell(getCell(row, indicecolonna.get()), rs0.getString("sa.ragionesociale").toUpperCase());
                         setCell(getCell(row, indicecolonna.addAndGet(1)), rs0.getString("sa.piva").toUpperCase());
-                        setCell(getCell(row, indicecolonna.addAndGet(1)), rs0.getString("pf.cip") == null ? "":rs0.getString("pf.cip").toUpperCase());
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), rs0.getString("pf.cip") == null ? "" : rs0.getString("pf.cip").toUpperCase());
                         setCell(getCell(row, indicecolonna.addAndGet(1)), rs0.getString("st.descrizione").toUpperCase());
                         setCell(getCell(row, indicecolonna.addAndGet(1)), rendicontato);
                         setCell(getCell(row, indicecolonna.addAndGet(1)), rs0.getString("pf.start") == null ? "" : sdfITA.format(rs0.getDate("pf.start")));
                         setCell(getCell(row, indicecolonna.addAndGet(1)), rs0.getString("pf.end") == null ? "" : sdfITA.format(rs0.getDate("pf.end")));
-                        
+
                         AtomicInteger ALLIEVIISCRITTI = new AtomicInteger(0);
                         AtomicInteger ALLIEVIVALIDATI = new AtomicInteger(0);
                         int idpr = rs0.getInt("pf.idprogetti_formativi");
@@ -1238,6 +1235,54 @@ public class Toscana_gestione {
             log.severe(estraiEccezione(e));
         }
 
+    }
+
+    public void update_modello0() {
+        boolean testing = false;
+        FaseA FA = new FaseA(testing);
+
+        try {
+
+            String pathdest = "/mnt/mcn/yisu_toscana/SoggettiAttuatori/";
+            Db_Gest db1 = new Db_Gest(FA.getHost());
+
+            String sql1 = "SELECT d.iddocumenti_allievi,d.path,d.idallievo FROM documenti_allievi d WHERE d.path LIKE '%/temp/%' AND d.deleted=0 ORDER BY d.idallievo";
+
+            try (Statement st1 = db1.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
+                while (rs1.next()) {
+                    Long id_doc = rs1.getLong(1);
+                    Long idallievo = rs1.getLong(3);
+                    String pathor = rs1.getString(2);
+                    File modello0 = new File(pathor);
+                    if (checkPDF(modello0)) {
+                        File modello0_dest = new File(pathdest + modello0.getName());
+                        try {
+                            FileUtils.copyFile(modello0, modello0_dest);
+                            if (checkPDF(modello0_dest)) {
+                                String update = "UPDATE documenti_allievi SET path = '" + modello0_dest.getPath() + "' WHERE iddocumenti_allievi=" + id_doc;
+
+                                try (Statement st2 = db1.getConnection().createStatement()) {
+                                    boolean upd = st2.executeUpdate(update) > 0;
+                                    log.log(Level.INFO, "{0} ({1}) {2}", new Object[]{idallievo, upd, update});
+                                }
+
+                            } else {
+                                log.log(Level.SEVERE, "NOT FOUND) {0}", modello0.getPath());
+                            }
+                        } catch (Exception ex1) {
+                            log.severe(estraiEccezione(ex1));
+                        }
+                    } else {
+                        log.log(Level.SEVERE, "NOT FOUND) {0}", modello0.getPath());
+                    }
+                }
+            }
+
+            db1.closeDB();
+
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
+        }
     }
 
 }
