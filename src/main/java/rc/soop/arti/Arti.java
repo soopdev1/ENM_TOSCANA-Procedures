@@ -6,20 +6,16 @@ package rc.soop.arti;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import java.io.IOException;
 import java.net.URI;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.dmfs.httpessentials.client.HttpRequestExecutor;
-import org.dmfs.httpessentials.exceptions.ProtocolError;
-import org.dmfs.httpessentials.exceptions.ProtocolException;
 import org.dmfs.httpessentials.httpurlconnection.HttpUrlConnectionExecutor;
 import org.dmfs.oauth2.client.BasicOAuth2AuthorizationProvider;
 import org.dmfs.oauth2.client.BasicOAuth2Client;
@@ -34,7 +30,6 @@ import org.dmfs.rfc3986.encoding.Precoded;
 import org.dmfs.rfc3986.uris.LazyUri;
 import org.dmfs.rfc5545.Duration;
 import org.joda.time.DateTime;
-import rc.soop.exe.Utils;
 import rc.soop.gestione.Db_Gest;
 import rc.soop.gestione.FaseA;
 import static rc.soop.exe.Utils.estraiEccezione;
@@ -192,6 +187,35 @@ public class Arti {
         } catch (Exception ex) {
             log.severe(estraiEccezione(ex));
         }
+
+        ////    COMPLETATO
+        String sql_COMPLETATO = "SELECT a.codicefiscale,p.cip,a.idallievi,p.start,p.end,a.id_statopartecipazione "
+                + "FROM allievi a, progetti_formativi p WHERE a.idprogetti_formativi=p.idprogetti_formativi "
+                + "AND p.stato IN ('F','DVB','IV','CK','EVI','CO') "
+                + "AND a.id_statopartecipazione IN ('18','19') "
+                + "AND (a.esito IS NULL OR a.esito NOT IN('IDONEO','TERMINATO_CON_INSUCCESSO')) "
+                + "ORDER BY a.codicefiscale";
+        try (Statement st1 = db0.getConnection().createStatement(); 
+                ResultSet rs1 = st1.executeQuery(sql_COMPLETATO)) {
+            while (rs1.next()) {
+                String CIP = rs1.getString("p.cip");
+                String dataInizioCorso = rs1.getString("p.start") + "T00:00:00.000Z";
+                String dataFineCorso = rs1.getString("p.end") + "T00:00:00.000Z";
+                String CF = rs1.getString("a.codicefiscale");
+                String STATOENM = rs1.getString("a.id_statopartecipazione");
+                String STATOARTI = STATOENM.equals("18") ? "IDONEO" : "TERMINATO_CON_INSUCCESSO";                
+                ResponseStatoIscrizione resp = invia(testing, CIP, CF, STATOARTI, STATOARTI, dataInizioCorso, dataFineCorso);
+                if (resp.getStatus().equals("success")) {
+                    String update = "UPDATE allievi SET esito='" + STATOARTI + "' WHERE idallievi = " + rs1.getString("a.idallievi");
+                    try (Statement st2 = db0.getConnection().createStatement()) {
+                        boolean ok = st2.executeUpdate(update) > 0;
+                        log.log(Level.INFO, "{0} - {1} ; {2} : {3} = {4}", new Object[]{STATOARTI, CF, CIP, update, ok});
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
+        }
         db0.closeDB();
 
     }
@@ -199,5 +223,4 @@ public class Arti {
 //    public static void main(String[] args) {
 //        cambiostato_allievo(false);
 //    }
-
 }

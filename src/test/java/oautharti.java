@@ -9,45 +9,20 @@
  */
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import java.io.IOException;
-import java.net.URI;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.dmfs.httpessentials.client.HttpRequestExecutor;
-import org.dmfs.httpessentials.exceptions.ProtocolError;
-import org.dmfs.httpessentials.exceptions.ProtocolException;
-import org.dmfs.httpessentials.httpurlconnection.HttpUrlConnectionExecutor;
-import org.dmfs.oauth2.client.BasicOAuth2AuthorizationProvider;
-import org.dmfs.oauth2.client.BasicOAuth2Client;
-import org.dmfs.oauth2.client.BasicOAuth2ClientCredentials;
-import org.dmfs.oauth2.client.OAuth2AccessToken;
-import org.dmfs.oauth2.client.OAuth2AuthorizationProvider;
-import org.dmfs.oauth2.client.OAuth2Client;
-import org.dmfs.oauth2.client.OAuth2ClientCredentials;
-import org.dmfs.oauth2.client.OAuth2InteractiveGrant;
-import org.dmfs.oauth2.client.grants.AuthorizationCodeGrant;
-import org.dmfs.oauth2.client.grants.ClientCredentialsGrant;
-import org.dmfs.oauth2.client.scope.BasicScope;
-import org.dmfs.oauth2.client.tokens.ImplicitGrantAccessToken;
-import org.dmfs.rfc3986.encoding.Precoded;
-import org.dmfs.rfc3986.uris.LazyUri;
-import org.dmfs.rfc5545.Duration;
-import org.joda.time.DateTime;
-import rc.soop.arti.Arti;
-import rc.soop.arti.ResponseStatoIscrizione;
-import static rc.soop.exe.Utils.estraiEccezione;
 import static rc.soop.exe.Utils.getJsonString;
 import rc.soop.gestione.Db_Gest;
 import rc.soop.gestione.FaseA;
-import static rc.soop.gestione.Toscana_gestione.log;
 
 public class oautharti {
 
-    public static void main(String[] args) {
+    
+    
+    
+    
+    public static void recuperadomicilio() {
         String sql = "SELECT t.azione FROM tracking t WHERE t.azione LIKE 'insertiscrizione%' GROUP BY t.azione;";
 
         FaseA FA = new FaseA(false);

@@ -58,8 +58,6 @@ public class Create {
             }
             db0.closeDB();
 
-            list_id.add(3);
-
             FaseB FB = new FaseB(testing);
 
             list_id.forEach(idpr -> {
@@ -237,11 +235,18 @@ public class Create {
                     long millischeck = nuova_rendicontazione_ore(millis_rendicontabili_DOCENTE.get(), idpr, host);
                     long millischeck1 = nuova_rendicontazione_ore(doc1.getMillistotaleore(), idpr, host);
 
-                    String sqloredocente = "SELECT l1.ore FROM lezioni_modelli l, lezione_calendario l1, docenti d1 "
-                            + "WHERE l1.id_lezionecalendario=l.id_lezionecalendario AND l.id_modelli_progetto=" + cal.getMpid_modello()
-                            + " AND l.giorno='" + cal.getGiorno() + "' "
-                            + "AND l.id_docente=d1.iddocenti AND d1.email='" + doc1.getEmail() + "';";
-//                    System.out.println("rc.soop.gestione.Create.gestisciorerendicontabili() "+sqloredocente);
+                    String sqloredocente = "SELECT l1.ore FROM lezioni_modelli l, lezione_calendario l1, docenti d1"
+                            + " WHERE l1.id_lezionecalendario=l.id_lezionecalendario AND l.id_modelli_progetto=" + cal.getMpid_modello()
+                            + " AND l.giorno='" + cal.getGiorno() + "'"
+                            + " AND l.id_docente=d1.iddocenti AND d1.email='" + doc1.getEmail() + "';";
+
+                    if (cal.getCodiceud().startsWith("B") && cal.getGruppo() > 0) {
+                        sqloredocente = "SELECT l1.ore FROM lezioni_modelli l, lezione_calendario l1, docenti d1"
+                                + " WHERE l1.id_lezionecalendario=l.id_lezionecalendario AND l.id_modelli_progetto=" + cal.getMpid_modello()
+                                + " AND l.giorno='" + cal.getGiorno() + "' AND l.gruppo_faseB = " + cal.getGruppo()
+                                + " AND l.id_docente=d1.iddocenti AND d1.email='" + doc1.getEmail() + "';";
+                    }
+
                     long oredocente = 0;
 
                     Db_Gest db0 = new Db_Gest(host);

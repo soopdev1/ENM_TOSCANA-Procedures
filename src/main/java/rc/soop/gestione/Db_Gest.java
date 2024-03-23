@@ -70,7 +70,7 @@ public class Db_Gest {
             this.c = null;
         }
     }
-    
+
     public Db_Gest(String host) {
 
         String driver = "com.mysql.cj.jdbc.Driver";
@@ -115,9 +115,9 @@ public class Db_Gest {
         String path = "-";
         try {
             String sql = "SELECT url FROM path WHERE id = ?";
-            try ( PreparedStatement ps = this.c.prepareStatement(sql)) {
+            try (PreparedStatement ps = this.c.prepareStatement(sql)) {
                 ps.setString(1, id);
-                try ( ResultSet rs = ps.executeQuery()) {
+                try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         path = rs.getString(1);
                     }
@@ -133,7 +133,7 @@ public class Db_Gest {
         List<Integer> out = new ArrayList<>();
         try {
             String sql = "SELECT * FROM nuovarend";
-            try ( Statement st = this.c.createStatement();  ResultSet rs = st.executeQuery(sql)) {
+            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
                 while (rs.next()) {
                     out.add(rs.getInt(1));
                 }
@@ -147,7 +147,7 @@ public class Db_Gest {
     public boolean insertTracking(String idUser, String azione) {
         try {
             String ins = "INSERT INTO tracking (idUser,azione) VALUES (?,?)";
-            try ( PreparedStatement ps = this.c.prepareStatement(ins)) {
+            try (PreparedStatement ps = this.c.prepareStatement(ins)) {
                 ps.setString(1, idUser);
                 ps.setString(2, azione);
                 ps.execute();
@@ -163,7 +163,7 @@ public class Db_Gest {
         ArrayList<Comuni_rc> out = new ArrayList<>();
         try {
             String sql = "SELECT * FROM comuni_rc";
-            try ( PreparedStatement ps1 = this.c.prepareStatement(sql, TYPE_SCROLL_INSENSITIVE, CONCUR_UPDATABLE);  ResultSet rs1 = ps1.executeQuery()) {
+            try (PreparedStatement ps1 = this.c.prepareStatement(sql, TYPE_SCROLL_INSENSITIVE, CONCUR_UPDATABLE); ResultSet rs1 = ps1.executeQuery()) {
                 while (rs1.next()) {
                     out.add(new Comuni_rc(rs1.getInt(1), rs1.getString(2),
                             rs1.getString(3),
@@ -210,7 +210,7 @@ public class Db_Gest {
         int var1 = 0;
         try {
             String query = "select count(*) from docuserconvenzioni where username='" + username + "'";
-            try ( PreparedStatement ps = this.c.prepareStatement(query);  ResultSet rs = ps.executeQuery()) {
+            try (PreparedStatement ps = this.c.prepareStatement(query); ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     var1 = rs.getInt(1);
                 }
@@ -225,7 +225,7 @@ public class Db_Gest {
         String out = "0";
         try {
             String query = "select username,sendmail from docuserconvenzioni where username='" + username + "' and codicedoc='CONV'";
-            try ( PreparedStatement ps = this.c.prepareStatement(query);  ResultSet rs = ps.executeQuery()) {
+            try (PreparedStatement ps = this.c.prepareStatement(query); ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     out = rs.getString("sendmail");
                 }
@@ -240,7 +240,7 @@ public class Db_Gest {
         String pathRoma = "";
         try {
             String query = "select path from convenzioniroma where username = '" + username + "' order by timestamp desc limit 1";
-            try ( PreparedStatement ps = this.c.prepareStatement(query);  ResultSet rs = ps.executeQuery()) {
+            try (PreparedStatement ps = this.c.prepareStatement(query); ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     pathRoma = rs.getString("path");
                 }
@@ -256,7 +256,7 @@ public class Db_Gest {
         try {
             ArrayList<Comuni_rc> comuni_rc = query_comuni_rc();
             String sql = "SELECT * FROM " + table + " ORDER BY dataconsegna";
-            try ( PreparedStatement ps = this.c.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
+            try (PreparedStatement ps = this.c.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
 
                     String USERNAME = rs.getString("username");
@@ -298,15 +298,17 @@ public class Db_Gest {
                     }
 
                     String sql2 = "SELECT * FROM usersvalori WHERE username= '" + USERNAME + "'";
-                    try ( PreparedStatement ps2 = this.c.prepareStatement(sql2);  ResultSet rs2 = ps2.executeQuery()) {
+                    try (PreparedStatement ps2 = this.c.prepareStatement(sql2); ResultSet rs2 = ps2.executeQuery()) {
                         while (rs2.next()) {
                             String campo = rs2.getString("campo");
                             String valore = rs2.getString("valore").toUpperCase().trim();
                             String valore1 = rs2.getString("valore").toUpperCase().trim();
 
                             switch (campo) {
-                                case "sedeindirizzo" -> ex1.setSEDELEGALEINDIRIZZO(valore.toUpperCase());
-                                case "sedecap" -> ex1.setSEDELEGALECAP(valore.toUpperCase());
+                                case "sedeindirizzo" ->
+                                    ex1.setSEDELEGALEINDIRIZZO(valore.toUpperCase());
+                                case "sedecap" ->
+                                    ex1.setSEDELEGALECAP(valore.toUpperCase());
                                 case "sedecomune" -> {
                                     if (!valore.equals("")) {
                                         Comuni_rc c0 = comuni_rc.stream().filter(c1 -> (c1.getId() == parseIntR(valore))).findAny().orElse(null);
@@ -334,8 +336,10 @@ public class Db_Gest {
                                     }
                                     ex1.setSEDELEGALEREGIONE(valore1.toUpperCase());
                                 }
-                                case "email" -> ex1.setEMAIL(valore.toUpperCase());
-                                case "cell" -> ex1.setTELEFONO(valore.toUpperCase());
+                                case "email" ->
+                                    ex1.setEMAIL(valore.toUpperCase());
+                                case "cell" ->
+                                    ex1.setTELEFONO(valore.toUpperCase());
                                 default -> {
                                 }
                             }
@@ -385,7 +389,7 @@ public class Db_Gest {
 
                     String sql3 = "select * from allegato_b where username = '" + USERNAME + "' ORDER BY id";
 
-                    try ( PreparedStatement ps3 = this.c.prepareStatement(sql3);  ResultSet rs3 = ps3.executeQuery()) {
+                    try (PreparedStatement ps3 = this.c.prepareStatement(sql3); ResultSet rs3 = ps3.executeQuery()) {
                         while (rs3.next()) {
 
                             switch (rs3.getInt("id")) {
@@ -451,7 +455,7 @@ public class Db_Gest {
         ArrayList<Items> out = new ArrayList<>();
         try {
             String sql = "SELECT * FROM disponibilita_rc";
-            try ( PreparedStatement ps1 = this.c.prepareStatement(sql, TYPE_SCROLL_INSENSITIVE, CONCUR_UPDATABLE);  ResultSet rs1 = ps1.executeQuery()) {
+            try (PreparedStatement ps1 = this.c.prepareStatement(sql, TYPE_SCROLL_INSENSITIVE, CONCUR_UPDATABLE); ResultSet rs1 = ps1.executeQuery()) {
                 while (rs1.next()) {
                     out.add(new Items(rs1.getInt(1), rs1.getString(2)));
                 }
@@ -469,9 +473,9 @@ public class Db_Gest {
             ArrayList<Comuni_rc> comuni_rc = query_comuni_rc();
             ArrayList<Items> disponibilita = query_disponibilita_rc();
 
-            try ( PreparedStatement ps = this.c.prepareStatement(query)) {
+            try (PreparedStatement ps = this.c.prepareStatement(query)) {
                 ps.setString(1, username);
-                try ( ResultSet rs = ps.executeQuery()) {
+                try (ResultSet rs = ps.executeQuery()) {
                     ResultSetMetaData rsmd = rs.getMetaData();
                     int columnCount = rsmd.getColumnCount();
                     for (int i = 1; i <= columnCount; i++) {
@@ -522,7 +526,7 @@ public class Db_Gest {
         if (base64 != null) {
             try {
                 String insert = "INSERT INTO excelreport VALUES(?,?,?)";
-                try ( PreparedStatement ps = this.c.prepareStatement(insert)) {
+                try (PreparedStatement ps = this.c.prepareStatement(insert)) {
                     ps.setString(1, data);
                     ps.setString(2, base64);
                     ps.setString(3, timestamp);
@@ -533,7 +537,7 @@ public class Db_Gest {
                 if (e.getMessage().toLowerCase().contains("duplicate")) {
                     try {
                         String insert = "UPDATE excelreport SET content = ?, aggiornamento = ? WHERE giorno = ?";
-                        try ( PreparedStatement ps1 = this.c.prepareStatement(insert)) {
+                        try (PreparedStatement ps1 = this.c.prepareStatement(insert)) {
                             ps1.setString(1, base64);
                             ps1.setString(2, timestamp);
                             ps1.setString(3, data);
@@ -556,8 +560,8 @@ public class Db_Gest {
     public List<Utenti> list_Allievi_noAccento(int idpr) {
         List<Utenti> out = new ArrayList<>();
         try {
-            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email FROM allievi WHERE id_statopartecipazione='15' AND idprogetti_formativi = " + idpr;
-            try ( Statement st = this.c.createStatement();  ResultSet rs = st.executeQuery(sql)) {
+            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email FROM allievi WHERE id_statopartecipazione IN ('15','18') AND idprogetti_formativi = " + idpr;
+            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
                 while (rs.next()) {
                     Utenti u = new Utenti(rs.getInt("idallievi"),
                             stripAccents(rs.getString("cognome").toUpperCase()).trim(),
@@ -576,8 +580,8 @@ public class Db_Gest {
     public List<Utenti> list_Allievi_noAccento(int idpr, int gruppo) {
         List<Utenti> out = new ArrayList<>();
         try {
-            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email FROM allievi WHERE id_statopartecipazione='15' AND idprogetti_formativi = " + idpr + " AND gruppo_faseB = " + gruppo;
-            try ( Statement st = this.c.createStatement();  ResultSet rs = st.executeQuery(sql)) {
+            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email FROM allievi WHERE id_statopartecipazione IN ('15','18') AND idprogetti_formativi = " + idpr + " AND gruppo_faseB = " + gruppo;
+            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
                 while (rs.next()) {
                     Utenti u = new Utenti(rs.getInt("idallievi"),
                             stripAccents(rs.getString("cognome").toUpperCase()).trim(),
@@ -596,8 +600,8 @@ public class Db_Gest {
     public List<Utenti> list_Allievi(int idpr) {
         List<Utenti> out = new ArrayList<>();
         try {
-            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email FROM allievi WHERE id_statopartecipazione='15' AND idprogetti_formativi = " + idpr;
-            try ( Statement st = this.c.createStatement();  ResultSet rs = st.executeQuery(sql)) {
+            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email FROM allievi WHERE id_statopartecipazione IN ('15','18') AND idprogetti_formativi = " + idpr;
+            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
                 while (rs.next()) {
                     Utenti u = new Utenti(rs.getInt("idallievi"),
                             (rs.getString("cognome").toUpperCase().trim()),
@@ -618,7 +622,7 @@ public class Db_Gest {
         try {
             String sql = "SELECT iddocenti,nome,cognome,codicefiscale,email FROM docenti WHERE iddocenti IN "
                     + "(SELECT iddocenti FROM progetti_docenti WHERE idprogetti_formativi = " + idpr + ")";
-            try ( Statement st = this.c.createStatement();  ResultSet rs = st.executeQuery(sql)) {
+            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
                 while (rs.next()) {
                     Utenti u = new Utenti(rs.getInt("iddocenti"),
                             (rs.getString("cognome").toUpperCase().trim()),
@@ -639,7 +643,7 @@ public class Db_Gest {
         try {
             String sql = "SELECT iddocenti,nome,cognome,codicefiscale,email FROM docenti WHERE iddocenti IN "
                     + "(SELECT iddocenti FROM progetti_docenti WHERE idprogetti_formativi = " + idpr + ")";
-            try ( Statement st = this.c.createStatement();  ResultSet rs = st.executeQuery(sql)) {
+            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
                 while (rs.next()) {
                     Utenti u = new Utenti(rs.getInt("iddocenti"),
                             stripAccents(rs.getString("cognome").toUpperCase().trim()),
@@ -659,11 +663,11 @@ public class Db_Gest {
         try {
 
             String sql0 = "SELECT cip,idsoggetti_attuatori FROM progetti_formativi WHERE idprogetti_formativi = " + idpr;
-            try ( Statement st0 = this.c.createStatement();  ResultSet rs0 = st0.executeQuery(sql0)) {
+            try (Statement st0 = this.c.createStatement(); ResultSet rs0 = st0.executeQuery(sql0)) {
                 if (rs0.next()) {
                     String cip = rs0.getString(1);
                     String sql1 = "SELECT ragionesociale FROM soggetti_attuatori WHERE idsoggetti_attuatori = " + rs0.getInt(2);
-                    try ( Statement st1 = this.c.createStatement();  ResultSet rs1 = st1.executeQuery(sql1)) {
+                    try (Statement st1 = this.c.createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
                         if (rs1.next()) {
                             String[] out = {rs1.getString(1).trim().toUpperCase(), cip, rs0.getString(2)};
                             return out;
@@ -683,7 +687,7 @@ public class Db_Gest {
         List<DatiDiscente> out = new ArrayList<>();
         try {
             String sql0 = "SELECT username,pivacf,cf,protocollo,decreto,datadecreto FROM bando_toscana_mcn WHERE stato_domanda='A'";
-            try ( Statement st0 = this.c.createStatement();  ResultSet rs0 = st0.executeQuery(sql0)) {
+            try (Statement st0 = this.c.createStatement(); ResultSet rs0 = st0.executeQuery(sql0)) {
                 while (rs0.next()) {
                     out.add(new DatiDiscente(rs0.getString(1), rs0.getString(2), rs0.getString(3), rs0.getString(4), rs0.getString(5), rs0.getString(6)));
                 }
@@ -693,7 +697,7 @@ public class Db_Gest {
         }
         return out;
     }
-    
+
     public int get_allievi_accreditati(int idpr) {
         int out = 0;
         try {
@@ -725,27 +729,69 @@ public class Db_Gest {
         }
         return 0L;
     }
-    
-    
-    public boolean insert_UD_presenza (String completa,String datafine,String datainizio,String fase,String orepresenze,String oretotali,String ud,String idallievi){        
+
+    public boolean insert_UD_presenza(String completa, String datafine, String datainizio, String fase, String orepresenze, String oretotali, String ud, String idallievi) {
         try {
-            String ins = "INSERT INTO presenzeudallievi (completa,datafine,datainizio,fase,orepresenze,oretotali,ud,idallievi) VALUES (?,?,?,?,?,?,?,?)";
-            try (PreparedStatement ps = this.c.prepareStatement(ins, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
-                ps.setString(1, completa);
-                ps.setString(2, datafine);
-                ps.setString(3, datainizio);
-                ps.setString(4, fase);
-                ps.setString(5, orepresenze);
-                ps.setString(6, oretotali);
-                ps.setString(7, ud);
-                ps.setString(8, idallievi);
-                ps.execute();
-                return true;
+
+            String s1 = "SELECT * FROM presenzeudallievi p WHERE p.idallievi = ? AND p.ud = ?";
+            try (PreparedStatement ps1 = this.c.prepareStatement(s1, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
+                ps1.setString(1, idallievi);
+                ps1.setString(2, ud);
+                try (ResultSet rs1 = ps1.executeQuery()) {
+                    if (rs1.next()) {
+                        String upd = "UPDATE presenzeudallievi SET completa = ?, datafine = ?, datainizio = ?, fase = ? ,orepresenze  = ?, oretotali = ? WHERE ud  = ? AND idallievi = ?";
+                        try (PreparedStatement ps = this.c.prepareStatement(upd, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
+                            ps.setString(1, completa);
+                            ps.setString(2, datafine);
+                            ps.setString(3, datainizio);
+                            ps.setString(4, fase);
+                            ps.setString(5, orepresenze);
+                            ps.setString(6, oretotali);
+                            ps.setString(7, ud);
+                            ps.setString(8, idallievi);
+                            ps.executeUpdate();
+                            return true;
+                        }
+                    } else {
+                        String ins = "INSERT INTO presenzeudallievi (completa,datafine,datainizio,fase,orepresenze,oretotali,ud,idallievi) VALUES (?,?,?,?,?,?,?,?)";
+                        try (PreparedStatement ps = this.c.prepareStatement(ins, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
+                            ps.setString(1, completa);
+                            ps.setString(2, datafine);
+                            ps.setString(3, datainizio);
+                            ps.setString(4, fase);
+                            ps.setString(5, orepresenze);
+                            ps.setString(6, oretotali);
+                            ps.setString(7, ud);
+                            ps.setString(8, idallievi);
+                            ps.execute();
+                            return true;
+                        }
+                    }
+                }
             }
+
         } catch (Exception ex) {
             ex.printStackTrace();
-//            insertTracking("ERROR SYSTEM", estraiEccezione(ex));
+            insertTracking("ERROR SYSTEM", estraiEccezione(ex));
         }
         return false;
     }
+
+    public String getTipoDocAllievi(String id) {
+        try {
+            String sql = "SELECT modello FROM tipo_documenti_allievi WHERE idtipodocumenti_allievi = ?";
+            try (PreparedStatement ps = this.c.prepareStatement(sql)) {
+                ps.setString(1, id);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getString(1);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
+        }
+        return null;
+    }
+
 }

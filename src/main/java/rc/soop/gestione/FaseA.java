@@ -72,9 +72,9 @@ import static rc.soop.gestione.Toscana_gestione.log;
  * @author rcosco
  */
 public class FaseA {
-
+    
     public String host;
-
+    
     public FaseA(boolean test) {
         this.host = conf.getString("db.host") + ":3306/enm_gestione_toscana_prod";
         if (test) {
@@ -82,7 +82,7 @@ public class FaseA {
         }
         log.log(Level.INFO, "HOST: {0}", this.host);
     }
-
+    
     public File registro_aula_FaseA(int idpr, String host, boolean save, List<Lezione> calendar) {
         try {
             Db_Gest db0 = new Db_Gest(host);
@@ -113,7 +113,7 @@ public class FaseA {
             PdfDocument pdfDoc = new PdfDocument(pw0);
             pdfDoc.setDefaultPageSize(PageSize.A4.rotate());
             Document doc = new Document(pdfDoc);
-
+            
             Db_Gest db1 = new Db_Gest(host);
             AtomicInteger indice = new AtomicInteger(1);
             calendar.forEach(cal -> {
@@ -152,14 +152,14 @@ public class FaseA {
                             registro.add(rc);
                         }
                     }
-
+                    
                     Cell cell0 = new Cell(1, 8);
                     cell0.add(new Paragraph("YES I START UP TOSCANA").addStyle(bold));
                     cell0.add(new Paragraph("Formarsi per diventare imprenditore/imprenditrice in Toscana").addStyle(bold));
                     cell0.add(new Paragraph("CUP D54D23002380007").addStyle(bold));
                     cell0.setTextAlignment(TextAlignment.CENTER);
                     table.addCell(cell0);
-
+                    
                     Cell cell = new Cell(1, 8);
                     cell.add(new Paragraph(" ").addStyle(normal));
                     cell.setTextAlignment(TextAlignment.CENTER);
@@ -184,9 +184,9 @@ public class FaseA {
                     cell.add(new Paragraph(datisa[1]).addStyle(normal));
                     cell.setBackgroundColor(lightgrey);
                     table.addCell(cell);
-
+                    
                     if (!registro.isEmpty()) {
-
+                        
                         Registro_completo primo = registro.get(0);
                         cell = new Cell();
                         cell.add(new Paragraph("DATA").addStyle(bold));
@@ -208,7 +208,7 @@ public class FaseA {
                         cell = new Cell();
                         cell.add(new Paragraph("ORA INIZIO").addStyle(bold));
                         cell.add(new Paragraph("(" + cal.getStart() + ")").addStyle(normal));
-
+                        
                         table.addCell(cell);
                         cell = new Cell();
                         cell.add(new Paragraph("ORA FINE").addStyle(bold));
@@ -225,7 +225,7 @@ public class FaseA {
                         cell.setBorderRight(Border.NO_BORDER);
                         cell.setBorderBottom(Border.NO_BORDER);
                         table.addCell(cell);
-
+                        
                         cell = new Cell();
                         cell.add(new Paragraph(String.valueOf(primo.getNumpartecipanti())).addStyle(normal));
                         cell.setBackgroundColor(lightgrey);
@@ -263,7 +263,7 @@ public class FaseA {
                         cell.setTextAlignment(TextAlignment.CENTER);
                         cell.setBorder(Border.NO_BORDER);
                         table.addCell(cell);
-
+                        
                         Cell cel2 = new Cell();
                         cel2.add(new Paragraph("COGNOME").addStyle(bold));
                         table.addCell(cel2);
@@ -288,7 +288,7 @@ public class FaseA {
                         cel2 = new Cell();
                         cel2.add(new Paragraph("TOTALE ORE RENDICONTABILI").addStyle(bold));
                         table.addCell(cel2);
-
+                        
                         registro.forEach(r1 -> {
                             Cell cel3 = new Cell();
                             cel3.add(new Paragraph(r1.getCognome()).addStyle(normal));
@@ -336,16 +336,16 @@ public class FaseA {
                     doc.add(new AreaBreak(AreaBreakType.NEXT_PAGE));
                 }
                 indice.addAndGet(1);
-
+                
             });
             db1.closeDB();
-
+            
             if (indice.get() > 1) {
-
+                
                 doc.close();
                 pdfDoc.close();
                 pw0.close();
-
+                
                 String qrcontent = "ID " + idpr + " REGISTRO FASE A - AGGIORNATO IL " + now;
                 File out1 = new File(StringUtils.replace(out0.getPath(), ".pdf", "_qr.pdf"));
                 try (PdfReader p2 = new PdfReader(out0); PdfWriter p2w = new PdfWriter(out1); PdfDocument pdfDoc1 = new PdfDocument(p2, p2w)) {
@@ -357,7 +357,7 @@ public class FaseA {
                 if (checkPDF(out2)) {
                     out0.deleteOnExit();
                     out1.deleteOnExit();
-
+                    
                     createDir(path_destinazione);
                     File pdf_final = new File(path_destinazione + File.separator + "Registro Fase A_" + now1 + ".pdf");
                     FileUtils.copyFile(out2, pdf_final);
@@ -388,16 +388,16 @@ public class FaseA {
                         }
                         return pdf_final;
                     }
-
+                    
                 }
             }
-
+            
         } catch (Exception ex) {
             log.severe(Constant.estraiEccezione(ex));
         }
         return null;
     }
-
+    
     public File registro_aula_FaseA(int idpr, String host, boolean save, boolean today) {
         try {
             StringBuilder nomestanza = new StringBuilder();
@@ -412,7 +412,7 @@ public class FaseA {
             String now = adesso.toString(timestampITAcomplete);
             String now0 = adesso.toString(timestamp);
             String now1 = adesso.toString(patternid);
-
+            
             String pathtemp = db0.getPath("pathTemp");
             String sql0 = "SELECT nomestanza FROM fad_multi WHERE idprogetti_formativi=" + idpr;
             try (Statement st0 = db0.getConnection().createStatement(); ResultSet rs0 = st0.executeQuery(sql0)) {    //STANZA
@@ -421,7 +421,7 @@ public class FaseA {
                 }
             }
             db0.closeDB();
-
+            
             if (nomestanza.toString().trim().equals("")) {
                 log.log(Level.SEVERE, "{0} NESSUNA STANZA TROVATA", idpr);
             } else {
@@ -429,7 +429,7 @@ public class FaseA {
                 String sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud "
                         + "    WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario AND ud.codice=lc.codice_ud "
                         + " AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase A' AND lm.giorno < CURDATE() GROUP BY lm.giorno ORDER BY lc.lezione,lm.orario_start";
-
+                
                 if (today) {
                     sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud "
                             + " WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario AND ud.codice=lc.codice_ud "
@@ -460,10 +460,10 @@ public class FaseA {
                 PdfDocument pdfDoc = new PdfDocument(pw0);
                 pdfDoc.setDefaultPageSize(PageSize.A4.rotate());
                 Document doc = new Document(pdfDoc);
-
+                
                 AtomicInteger indice = new AtomicInteger(1);
                 calendar.forEach(cal -> {
-
+                    
                     List<Registro_completo> registro = new ArrayList<>();
                     Table table = new Table(UnitValue.createPercentArray(8)).useAllAvailableWidth();
                     try {
@@ -499,16 +499,16 @@ public class FaseA {
                                 registro.add(rc);
                             }
                         }
-
+                        
                         Cell cell0 = new Cell(1, 8);
-
+                        
                         cell0.add(new Paragraph("YES I START UP TOSCANA").addStyle(bold));
                         cell0.add(new Paragraph("Formarsi per diventare imprenditore/imprenditrice in Toscana").addStyle(bold));
                         cell0.add(new Paragraph("CUP D54D23002380007").addStyle(bold));
-
+                        
                         cell0.setTextAlignment(TextAlignment.CENTER);
                         table.addCell(cell0);
-
+                        
                         Cell cell = new Cell(1, 8);
                         cell.add(new Paragraph(" ").addStyle(normal));
                         cell.setTextAlignment(TextAlignment.CENTER);
@@ -533,9 +533,9 @@ public class FaseA {
                         cell.add(new Paragraph(datisa[1]).addStyle(normal));
                         cell.setBackgroundColor(lightgrey);
                         table.addCell(cell);
-
+                        
                         if (!registro.isEmpty()) {
-
+                            
                             Registro_completo primo = registro.get(0);
                             cell = new Cell();
                             cell.add(new Paragraph("DATA").addStyle(bold));
@@ -559,7 +559,7 @@ public class FaseA {
                             table.addCell(cell);
                             cell = new Cell();
                             cell.add(new Paragraph("ORA FINE").addStyle(bold));
-
+                            
                             table.addCell(cell);
                             cell = new Cell();
                             cell.add(new Paragraph("DURATA").addStyle(bold));
@@ -572,7 +572,7 @@ public class FaseA {
                             cell.setBorderRight(Border.NO_BORDER);
                             cell.setBorderBottom(Border.NO_BORDER);
                             table.addCell(cell);
-
+                            
                             cell = new Cell();
                             cell.add(new Paragraph(String.valueOf(primo.getNumpartecipanti())).addStyle(normal));
                             cell.setBackgroundColor(lightgrey);
@@ -610,7 +610,7 @@ public class FaseA {
                             cell.setTextAlignment(TextAlignment.CENTER);
                             cell.setBorder(Border.NO_BORDER);
                             table.addCell(cell);
-
+                            
                             Cell cel2 = new Cell();
                             cel2.add(new Paragraph("COGNOME").addStyle(bold));
                             table.addCell(cel2);
@@ -635,7 +635,7 @@ public class FaseA {
                             cel2 = new Cell();
                             cel2.add(new Paragraph("TOTALE ORE RENDICONTABILI").addStyle(bold));
                             table.addCell(cel2);
-
+                            
                             registro.forEach(r1 -> {
                                 Cell cel3 = new Cell();
                                 cel3.add(new Paragraph(r1.getCognome()).addStyle(normal));
@@ -683,16 +683,16 @@ public class FaseA {
                         doc.add(new AreaBreak(AreaBreakType.NEXT_PAGE));
                     }
                     indice.addAndGet(1);
-
+                    
                 });
                 db1.closeDB();
-
+                
                 if (indice.get() > 1) {
-
+                    
                     doc.close();
                     pdfDoc.close();
                     pw0.close();
-
+                    
                     String qrcontent = "ID " + idpr + " REGISTRO FASE A - AGGIORNATO IL " + now;
                     File out1 = new File(StringUtils.replace(out0.getPath(), ".pdf", "_qr.pdf"));
                     try (PdfReader p2 = new PdfReader(out0); PdfWriter p2w = new PdfWriter(out1); PdfDocument pdfDoc1 = new PdfDocument(p2, p2w)) {
@@ -704,7 +704,7 @@ public class FaseA {
                     if (checkPDF(out2)) {
                         out0.deleteOnExit();
                         out1.deleteOnExit();
-
+                        
                         createDir(path_destinazione);
                         File pdf_final = new File(path_destinazione + File.separator + "Registro Fase A_" + now1 + ".pdf");
                         FileUtils.copyFile(out2, pdf_final);
@@ -727,7 +727,7 @@ public class FaseA {
                                             ps1.setInt(3, 29);
                                             ps1.execute();
                                         }
-
+                                        
                                     }
                                 }
                                 db3.closeDB();
@@ -736,7 +736,7 @@ public class FaseA {
                             }
                             return pdf_final;
                         }
-
+                        
                     }
                 }
             }
@@ -745,23 +745,23 @@ public class FaseA {
         }
         return null;
     }
-
+    
     public List<Lezione> generaregistrofasea_PR(int idpr, String host, boolean printing, boolean save, boolean today) {
         List<Lezione> calendar = new ArrayList<>();
         List<Lezione> calendartemp = new ArrayList<>();
         try {
             Db_Gest db1 = new Db_Gest(host);
-
+            
             String sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore,mp.id_modello FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud "
                     + " WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario AND ud.codice=lc.codice_ud "
                     + " AND lm.tipolez='P' AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase A' AND lm.giorno < CURDATE() ORDER BY lc.lezione,lm.orario_start";
-
+            
             try (Statement st1 = db1.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
                 if (printing) {
                     log.log(Level.INFO, "2) {0}", sql1);
                 }
                 while (rs1.next()) {
-
+                    
                     Lezione temp1 = new Lezione(rs1.getInt("lc.lezione"),
                             rs1.getInt("lm.id_docente"),
                             rs1.getString("lm.giorno"), rs1.getString("lm.orario_start"), rs1.getString("lm.orario_end"),
@@ -773,9 +773,9 @@ public class FaseA {
                     log.log(Level.INFO, "2) {0}", calendartemp.size());
                 }
             }
-
+            
             db1.closeDB();
-
+            
             for (int i = 0; i < calendartemp.size(); i++) {
                 Lezione cal = calendartemp.get(i);
                 Lezione cal2;
@@ -790,7 +790,7 @@ public class FaseA {
                 } catch (Exception e) {
                     cal3 = null;
                 }
-
+                
                 boolean hasnext = cal2 != null;
                 if (hasnext) {
                     if (cal.getGiorno().equals(cal2.getGiorno())) {
@@ -802,7 +802,7 @@ public class FaseA {
                             }
                         });
                         double ore = Double.parseDouble(cal.getOre()) + Double.parseDouble(cal2.getOre());
-
+                        
                         Lezione l2temp = new Lezione(cal.getId(), doc1,
                                 cal.getGiorno(), cal.getStart(), cal2.getEnd(),
                                 cal.getCodiceud() + "_" + cal2.getCodiceud(),
@@ -825,13 +825,12 @@ public class FaseA {
                 }
             }
             
-
         } catch (Exception ex) {
             log.severe(Constant.estraiEccezione(ex));
         }
         return calendar;
     }
-
+    
     public List<Lezione> calcolaegeneraregistrofasea(int idpr, String host, boolean printing, boolean save, boolean today) {
         List<Lezione> calendar = new ArrayList<>();
         try {
@@ -862,7 +861,7 @@ public class FaseA {
                 }
             }
             db0.closeDB();
-
+            
             if (nomestanza.toString().trim().equals("")) {
                 log.log(Level.SEVERE, "{0} NESSUNA STANZA TROVATA", idpr);
                 return calendar;
@@ -873,19 +872,19 @@ public class FaseA {
                 String sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore,mp.id_modello FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud "
                         + " WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario AND ud.codice=lc.codice_ud "
                         + " AND lm.tipolez='F' AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase A' AND lm.giorno < CURDATE() ORDER BY lc.lezione,lm.orario_start";
-
+                
                 if (today) {
                     sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore,mp.id_modello FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud "
                             + " WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario AND ud.codice=lc.codice_ud "
                             + " AND lm.tipolez='F' AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase A' AND lm.giorno <= CURDATE() ORDER BY lc.lezione,lm.orario_start";
                 }
-
+                
                 try (Statement st1 = db1.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
                     if (printing) {
                         log.log(Level.INFO, "2) {0}", sql1);
                     }
                     while (rs1.next()) {
-
+                        
                         Lezione temp1 = new Lezione(rs1.getInt("lc.lezione"),
                                 rs1.getInt("lm.id_docente"),
                                 rs1.getString("lm.giorno"), rs1.getString("lm.orario_start"), rs1.getString("lm.orario_end"),
@@ -898,7 +897,7 @@ public class FaseA {
                     }
                 }
                 db1.closeDB();
-
+                
                 for (int i = 0; i < calendartemp.size(); i++) {
                     Lezione cal = calendartemp.get(i);
                     Lezione cal2;
@@ -913,7 +912,7 @@ public class FaseA {
                     } catch (Exception e) {
                         cal3 = null;
                     }
-
+                    
                     boolean hasnext = cal2 != null;
                     if (hasnext) {
                         if (cal.getGiorno().equals(cal2.getGiorno())) {
@@ -925,7 +924,7 @@ public class FaseA {
                                 }
                             });
                             double ore = Double.parseDouble(cal.getOre()) + Double.parseDouble(cal2.getOre());
-
+                            
                             Lezione l2temp = new Lezione(cal.getId(), doc1,
                                     cal.getGiorno(), cal.getStart(), cal2.getEnd(),
                                     cal.getCodiceud() + "_" + cal2.getCodiceud(),
@@ -1094,12 +1093,12 @@ public class FaseA {
                                 }
                                 List<Track> finaltr = tracking.stream().distinct().collect(Collectors.toList());
                                 finaltr.forEach(tr1 -> {
-
+                                    
                                     boolean contentallievo = allievi.stream().anyMatch(al -> tr1.getDescr().contains(al.getDescrizione()));
                                     if (contentallievo) {
                                         Utenti a = allievi.stream().filter(al -> tr1.getDescr().contains(al.getDescrizione())).findAny().get();
                                         Utenti a1 = allievi_corretti.stream().filter(al -> al.getId() == a.getId()).findAny().get();
-
+                                        
                                         Presenti pr1 = new Presenti(a1.getNome(), a1.getCognome(), a.getCf(), a.getEmail(), a.getRuolo());
                                         if (tr1.getDescr().contains("Login")) {
                                             pr1.setLogin(true);
@@ -1128,11 +1127,11 @@ public class FaseA {
                                         }
                                     }
                                 });
-
+                                
                                 presenti.sort(Comparator.comparing(a -> a.getRuolo()));
-
+                                
                                 List<String> dist_cf = Lists.reverse(presenti).stream().map(cf -> cf.getCf()).distinct().collect(Collectors.toList());
-
+                                
                                 dist_cf.forEach(tr1 -> {
                                     Presenti selected = presenti.stream().filter(cf -> cf.getCf().equalsIgnoreCase(tr1)).findFirst().get();
                                     List<Presenti> userp = presenti.stream().filter(d -> d.getCf().equalsIgnoreCase(tr1)).distinct().collect(Collectors.toList());
@@ -1169,24 +1168,24 @@ public class FaseA {
                                             }
                                             ind.addAndGet(1);
                                         });
-
+                                        
                                         if ((userp_final.size() % 2) != 0) {
                                             if (userp_final.getLast().isLogout()) {
                                                 userp_final.removeLast();
                                             } else {
-
+                                                
                                                 try {
                                                     DateTime ultimo = Constant.dtfsql.parseDateTime(userp_final.getLast().getDate());
                                                     DateTime finelezione = Constant.dtfsql.parseDateTime(cal.getGiorno() + " " + cal.getEnd());
                                                     if (ultimo.isAfter(finelezione)) {
-
+                                                        
                                                         userp_final.removeLast();
-
+                                                        
                                                     } else {
                                                         Presenti pr1 = new Presenti(userp_final.getLast().getNome(), userp_final.getLast().getCognome(),
                                                                 userp_final.getLast().getCf(), userp_final.getLast().getEmail(), userp_final.getLast().getRuolo());
                                                         pr1.setLogout(true);
-
+                                                        
                                                         pr1.setDate(cal.getGiorno() + " " + cal.getEnd());
                                                         pr1.setIdfad(userp_final.getLast().getIdfad());
                                                         userp_final.add(pr1);
@@ -1194,10 +1193,10 @@ public class FaseA {
                                                 } catch (Exception e) {
                                                     e.printStackTrace();
                                                 }
-
+                                                
                                             }
                                         }
-
+                                        
                                         if (!userp_final.isEmpty()) {
                                             AtomicLong millis = new AtomicLong(0);
                                             userp_final.forEach(ba1 -> {
@@ -1209,10 +1208,10 @@ public class FaseA {
                                                     logoutvalue.append(ba1.getDate().split(" ")[1].split("\\.")[0]).append("\n");
                                                 }
                                             });
-
+                                            
                                             long duratalogin = millis.get();
                                             String duratacollegamento = calcoladurata(duratalogin);
-
+                                            
                                             partecipanti.addAndGet(1);
                                             Presenti per_report = new Presenti(selected.getCognome().toUpperCase(), selected.getNome().toUpperCase(),
                                                     selected.getRuolo(), selected.getEmail(),
@@ -1221,11 +1220,11 @@ public class FaseA {
                                             per_report.setMillistotaleore(duratalogin);
                                             report.add(per_report);
                                         }
-
+                                        
                                     }
-
+                                    
                                 });
-
+                                
                                 List<Presenti> solodocenti = report.stream().filter(r1 -> r1.getRuolo().equals("DOCENTE")).sorted(Comparator.comparing(a -> a.getOradilogin())).collect(Collectors.toList());
                                 for (Presenti ps : solodocenti) {
                                     List<String> login_S = Splitter.on("\n").splitToList(ps.getOradilogin());
@@ -1240,18 +1239,22 @@ public class FaseA {
                                             fine.setLength(0);
                                             fine.append(logout_S.get(logout_S.size() - 1));
                                         }
-
+                                        
                                     }
                                 }
-
+                                
                                 AtomicLong millisdurata = new AtomicLong(0);
-                                millisdurata.addAndGet(-format("2021-01-01 " + StringUtils.substring(inizio.toString(), 0, 8), timestampSQL).getMillis());
-                                millisdurata.addAndGet(format("2021-01-01 " + StringUtils.substring(fine.toString(), 0, 8), timestampSQL).getMillis());
+                                try {
+                                    millisdurata.addAndGet(-format("2021-01-01 " + StringUtils.substring(inizio.toString(), 0, 8), timestampSQL).getMillis());
+                                    millisdurata.addAndGet(format("2021-01-01 " + StringUtils.substring(fine.toString(), 0, 8), timestampSQL).getMillis());
+                                } catch (Exception e) {
+                                    millisdurata.set(0);
+                                }
                                 long duratalogindurata = (millisdurata.get());
                                 durata.set(duratalogindurata);
-
+                                
                                 gestisciorerendicontabili(report, idpr, host, cal);
-
+                                
                                 report.forEach(r1 -> {
                                     try {
                                         String ins = "INSERT INTO registro_completo (idprogetti_formativi,idsoggetti_attuatori,cip,data,idriunione,numpartecipanti,orainizio,orafine,durata,nud,fase,gruppofaseb,ruolo,cognome,nome,email,orelogin,orelogout,totaleore,totaleorerendicontabili,idutente) "
@@ -1301,13 +1304,13 @@ public class FaseA {
         }
         return calendar;
     }
-
+    
     public String getHost() {
         return host;
     }
-
+    
     public void setHost(String host) {
         this.host = host;
     }
-
+    
 }

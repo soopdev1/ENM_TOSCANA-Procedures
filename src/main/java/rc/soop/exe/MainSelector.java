@@ -27,17 +27,6 @@ public class MainSelector {
             java.util.logging.Logger.getLogger("org.apache.pdfbox").setLevel(java.util.logging.Level.SEVERE);
         } catch (Exception e) {
         }
-
-        //ARGS[0] TEST
-        //////////////////////////////
-        //2 - GESTIONE - FAD
-        //3 - GESTIONE - ESTRAZIONI
-        //4 - GESTIONE - REPORT FAD
-        //5 - ACCREDITAMENTO
-        //6 - IDOLARTI
-        //////////////////////////////
-        //ARGS[2] NEET - DD
-        //////////////////////////////
         boolean testing;
         try {
             testing = args[0].trim().equals("test");
@@ -85,6 +74,7 @@ public class MainSelector {
                 crearegistri(testing);
                 log.warning("GESTIONE TOSCANA - UPDATE ORE CONVALIDATE");
                 tg.ore_convalidateAllievi();
+                tg.ore_ud();
                 break;
             }
             case 5 -> {
@@ -146,6 +136,25 @@ public class MainSelector {
                     log.severe(estraiEccezione(e));
                 }
             }
+            case 8 -> { //ATTESTATI
+                log.info("START ATTESTATI");
+                try {                  
+                    tg.attestati_ok();
+                } catch (Exception e) {
+                    log.severe(estraiEccezione(e));
+                }
+                try {                  
+                    tg.attestati_competenzedigitali();
+                } catch (Exception e) {
+                    log.severe(estraiEccezione(e));
+                }
+                try {                  
+                    tg.attestati_UD();
+                } catch (Exception e) {
+                    log.severe(estraiEccezione(e));
+                }
+            }
+                
             default -> { //NO ACTION
                 break;
             }

@@ -677,7 +677,8 @@ public class Complessivo {
                     } else {
                         String sql1 = "SELECT * FROM presenzelezioni p, progetti_formativi f, lezioni_modelli lm, lezione_calendario lc , docenti d "
                                 + " WHERE d.iddocenti=p.iddocente AND lc.id_lezionecalendario=lm.id_lezionecalendario AND lm.id_lezionimodelli=p.idlezioneriferimento AND "
-                                + " p.idprogetto=f.idprogetti_formativi AND p.idprogetto = " + idpr + " AND p.datalezione LIKE '" + day + "%'  AND lm.gruppo_faseB = " + cal.getGruppo() + " ORDER BY p.orainizio;";
+                                + " p.idprogetto=f.idprogetti_formativi AND p.idprogetto = " + idpr + " AND p.datalezione LIKE '" + day 
+                                + "%' AND lm.gruppo_faseB = " + cal.getGruppo() + " ORDER BY p.orainizio;";
 
                         try (Statement st1 = db1.getConnection().createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY); ResultSet rs1 = st1.executeQuery(sql1)) {
                             while (rs1.next()) {
