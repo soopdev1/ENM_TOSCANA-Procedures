@@ -18,7 +18,7 @@ import rc.soop.gestione.Toscana_gestione;
  */
 public class MainSelector {
 
-    public static final Logger log = Utils.createLog("Toscana_Accr_PR");
+    public static final Logger log = Utils.createLog("Toscana_PR");
 
     public static void main(String[] args) {
 
@@ -38,7 +38,7 @@ public class MainSelector {
         try {
             select_action = Integer.parseInt(args[1].trim());
         } catch (Exception e) {
-            select_action = 6;
+            select_action = 4;
         }
 
         Toscana_gestione tg = new Toscana_gestione(testing);
@@ -127,37 +127,44 @@ public class MainSelector {
                 }
                 break;
             }
-            case 7 -> { //MAINTENANCE - MODELLO 0
+            case 7 -> { //MAINTENANCE
                 try {
                     log.info("START MODELLO 0");
-                     tg.update_modello0();
+                    tg.update_modello0();
                     log.info("FINE MODELLO 0");
+                } catch (Exception e) {
+                    log.severe(estraiEccezione(e));
+                }
+                try {
+                    log.info("START IMPOSTA FINE ATTIVITA'");
+                    tg.imposta_fineattivita();
+                    log.info("FINE IMPOSTA FINE ATTIVITA'");
                 } catch (Exception e) {
                     log.severe(estraiEccezione(e));
                 }
             }
             case 8 -> { //ATTESTATI
                 log.info("START ATTESTATI");
-                try {                  
+                try {
                     tg.attestati_ok();
                 } catch (Exception e) {
                     log.severe(estraiEccezione(e));
                 }
-                try {                  
+                try {
                     tg.attestati_competenzedigitali();
                 } catch (Exception e) {
                     log.severe(estraiEccezione(e));
                 }
-                try {                  
+                try {
                     tg.attestati_UD();
                 } catch (Exception e) {
                     log.severe(estraiEccezione(e));
                 }
             }
-                
-            default -> { //NO ACTION
-                break;
-            }
+
+            default ->
+                log.severe("GESTIONE TOSCANA - NESSUN METODO SELEZIONATO");
+
         }
     }
 

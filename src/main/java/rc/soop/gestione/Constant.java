@@ -685,12 +685,11 @@ public class Constant {
 
     private static int getIdAllievo(Db_Gest db, String nome, String cognome, int idpr) {
         try {
-            String sql = "SELECT idallievi FROM allievi WHERE nome = ? AND cognome = ? AND idprogetti_formativi = ? AND id_statopartecipazione = ? ORDER BY idallievi DESC LIMIT 1";
+            String sql = "SELECT idallievi FROM allievi WHERE nome = ? AND cognome = ? AND idprogetti_formativi = ? AND id_statopartecipazione in (15,18) ORDER BY idallievi DESC LIMIT 1";
             try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
                 ps.setString(1, nome);
                 ps.setString(2, cognome);
                 ps.setInt(3, idpr);
-                ps.setString(4, "15");
                 ResultSet rs = ps.executeQuery();
                 if (rs.next()) {
                     return rs.getInt(1);

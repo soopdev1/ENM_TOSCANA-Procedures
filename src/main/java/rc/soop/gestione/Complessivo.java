@@ -155,7 +155,7 @@ public class Complessivo {
 
                                         try (Statement st2 = db1.getConnection().createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY); ResultSet rs2 = st2.executeQuery(sql2)) {
 
-                                            int numpartecipanti = 0;
+                                            int numpartecipanti = 1;
                                             while (rs2.next()) {
                                                 numpartecipanti++;
                                             }
@@ -688,7 +688,7 @@ public class Complessivo {
 
                                 try (Statement st2 = db1.getConnection().createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY); ResultSet rs2 = st2.executeQuery(sql2)) {
 
-                                    int numpartecipanti = 0;
+                                    int numpartecipanti = 1;
                                     while (rs2.next()) {
                                         numpartecipanti++;
                                     }

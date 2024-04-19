@@ -99,7 +99,6 @@ public class Pdf {
             String CIP = "";
             String DATAINIZIO = "";
             String DATAFINE = "";
-            String DATA = "";
 
             String sql0 = "SELECT a.idsoggetto_attuatore,a.codicefiscale,a.nome,a.cognome,c.nome,c.cod_provincia,a.datanascita,s.ragionesociale,p.sedefisica,p.cip,a.data_inizio_UD11,a.data_fine_UD11,p.start,p.end "
                     + "FROM allievi a, soggetti_attuatori s, progetti_formativi p , comuni c "
@@ -129,7 +128,7 @@ public class Pdf {
 
                     DATAINIZIO = new DateTime(rs.getDate("p.start").getTime()).toString(patternITA);
                     DATAFINE = new DateTime(rs.getDate("p.end").getTime()).toString(patternITA);
-                    DATA = new DateTime().toString(patternITA);
+//                    DATA = new DateTime().toString(patternITA);
 
                     String contentb64 = db0.getTipoDocAllievi("22"); // template
 
@@ -152,7 +151,7 @@ public class Pdf {
                         setFieldsValue(form, fields, "NOMESA", NOMESA.toUpperCase());
                         setFieldsValue(form, fields, "SEDE", SEDE.toUpperCase());
                         setFieldsValue(form, fields, "CIP", CIP.toUpperCase());
-                        setFieldsValue(form, fields, "DATA", DATA);
+                        setFieldsValue(form, fields, "DATA", DATAFINE);
                         setFieldsValue(form, fields, "DATAINIZIO", DATAINIZIO);
                         setFieldsValue(form, fields, "DATAFINE", DATAFINE);
 

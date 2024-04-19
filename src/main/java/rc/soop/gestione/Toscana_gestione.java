@@ -78,7 +78,7 @@ public class Toscana_gestione {
                 String sql2 = "SELECT r.totaleorerendicontabili,r.fase FROM registro_completo r WHERE r.idutente='"
                         + idallievi + "' AND r.ruolo='ALLIEVO'";
                 String sql3 = "SELECT a.durataconvalidata FROM presenzelezioniallievi a WHERE a.idallievi = '"
-                        + idallievi + "' AND a.convalidata=1";
+                        + idallievi + "' AND a.convalidata=1 AND a.durataconvalidata > 0";
 //                String sql3 = "SELECT p.durataconvalidata,z.codice_ud FROM presenzelezioniallievi p, presenzelezioni l, lezione_calendario z "
 //                        + "WHERE p.idallievi = '" + idallievi + "' AND p.convalidata=1 AND l.idpresenzelezioni=p.idpresenzelezioni "
 //                        + "AND l.idlezioneriferimento=z.id_lezionecalendario ";
@@ -623,6 +623,7 @@ public class Toscana_gestione {
     //REPORT
     private static final String formatdataCell = "#.0";
     private static final String formatdataCellINT = "##";
+    private static final String formatdataCellCUR = "€#,##0.00";
 
     // da completare
     public void report_allievi() {
@@ -637,10 +638,12 @@ public class Toscana_gestione {
             try (OutputStream outputStream = new FileOutputStream(new File(fileout)); XSSFWorkbook wb = new XSSFWorkbook(new FileInputStream(new File(fileing)))) {
 
                 XSSFCellStyle cellStyle = wb.createCellStyle();
-                cellStyle.setDataFormat(wb.createDataFormat().getFormat(formatdataCell));
+                cellStyle.setDataFormat(wb.createDataFormat().getFormat(formatdataCell));                
                 XSSFCellStyle cellStyleINT = wb.createCellStyle();
-                cellStyleINT.setDataFormat(wb.createDataFormat().getFormat(formatdataCellINT));
-
+                cellStyleINT.setDataFormat(wb.createDataFormat().getFormat(formatdataCellINT));                
+                XSSFCellStyle cellStyleCUR = wb.createCellStyle();
+                cellStyleCUR.setDataFormat(wb.createDataFormat().getFormat(formatdataCellCUR));
+                
                 XSSFSheet sh1 = wb.getSheetAt(0);
                 AtomicInteger maxrow = new AtomicInteger(1);
                 AtomicInteger indiceriga = new AtomicInteger(1);
@@ -842,11 +845,12 @@ public class Toscana_gestione {
                         String cip = "";
                         String dataavvio = "";
                         String datachiusura = "";
+                        String statoprogetto = "";
 
                         int idpr = rs0.getString("a.idprogetti_formativi") == null ? 0 : rs0.getInt("a.idprogetti_formativi");
 
                         if (idpr > 0) {
-                            String sql14 = "SELECT p.cip,p.start,p.end FROM progetti_formativi p WHERE p.idprogetti_formativi=" + idpr;
+                            String sql14 = "SELECT p.cip,p.start,p.end,s.descrizione FROM progetti_formativi p,stati_progetto s WHERE p.stato=s.idstati_progetto AND p.idprogetti_formativi=" + idpr;
 
                             try (Statement st14 = db1.getConnection().createStatement(); ResultSet rs14 = st14.executeQuery(sql14)) {
                                 if (rs14.next()) {
@@ -861,13 +865,132 @@ public class Toscana_gestione {
                                             datachiusura = sdfITA.format(rs14.getDate(3));
                                         }
                                     }
+                                    if (rs14.getString(4) != null) {
+                                        statoprogetto = rs14.getString(4).toUpperCase();
+                                    }
                                 }
                             }
                         }
 
-//                        for (String pre1 : presenzeconv) {
-//                            
-//                        }
+                        double oreUD11 = 0.0;
+                        String sql15 = "SELECT SUM(p.orepresenze) FROM presenzeudallievi p WHERE p.ud LIKE '%11%' AND p.idallievi=" + idallievo;
+                        try (Statement st15 = db1.getConnection().createStatement(); ResultSet rs15 = st15.executeQuery(sql15)) {
+                            if (rs15.next()) {
+                                oreUD11 = rs15.getDouble(1);
+                            }
+                        }
+
+                        String m5_grado_completezza = "";
+                        String m5_probabilita = "";
+                        String m5_forma_giuridica = "";
+                        String m5_ateco = "";
+                        String m5_sede = "";
+                        String m5_comune_localizzazione = "";
+                        String m5_totale_fabbisogno = "";
+                        String m5_misura_individuata = "";
+                        String m5_misura_si_tipo = "";
+                        String m5_misura_no_motivazione = "";
+
+                        String sql16 = "SELECT m.m5_grado_completezza,m.m5_probabilita,m.m5_forma_giuridica,m.m5_ateco,m.m5_sede,m.m5_comune_localizzazione,m.m5_totale_fabbisogno,m.m5_misura_individuata,"
+                                + "m.m5_misura_si_tipo,m.m5_misura_no_motivazione FROM maschera_m5 m WHERE m.allievo=" + idallievo;
+
+                        try (Statement st16 = db1.getConnection().createStatement(); ResultSet rs16 = st16.executeQuery(sql16)) {
+                            if (rs16.next()) {
+                                switch (rs16.getString("m.m5_grado_completezza")) {
+                                    case "00" ->
+                                        m5_grado_completezza = "NON ELABORATO";
+                                    case "01" ->
+                                        m5_grado_completezza = "INCOMPLETO";
+                                    case "02" ->
+                                        m5_grado_completezza = "PARIALMENTE COMPLETO";
+                                    case "03" ->
+                                        m5_grado_completezza = "ABBASTANZA COMPLETO";
+                                    case "04" ->
+                                        m5_grado_completezza = "COMPLETO";
+                                }
+                                switch (rs16.getString("m.m5_probabilita")) {
+                                    case "01" ->
+                                        m5_probabilita = "NESSUNA PROBABILITA'";
+                                    case "02" ->
+                                        m5_probabilita = "IMPROBABILE";
+                                    case "03" ->
+                                        m5_probabilita = "POCO PROBABILE";
+                                    case "04" ->
+                                        m5_probabilita = "PROBABILE";
+                                    case "05" ->
+                                        m5_probabilita = "MOLTO PROBABILE";
+                                    case "06" ->
+                                        m5_probabilita = "ALTAMENTE PROBABILE";
+                                }
+
+                                String sql16A = "SELECT * FROM formagiuridica WHERE idformagiuridica = " + rs16.getString("m.m5_forma_giuridica");
+                                try (Statement st16A = db1.getConnection().createStatement(); ResultSet rs16A = st16A.executeQuery(sql16A)) {
+                                    if (rs16A.next()) {
+                                        m5_forma_giuridica = rs16A.getString("descrizione").toUpperCase();
+                                    }
+                                }
+                                String sql16B = "SELECT * FROM ateco WHERE codice = '" + rs16.getString("m.m5_ateco")+"'";
+                                try (Statement st16B = db1.getConnection().createStatement(); ResultSet rs16B = st16B.executeQuery(sql16B)) {
+                                    if (rs16B.next()) {
+                                        m5_ateco = rs16B.getString("descrizione").toUpperCase();
+                                    }
+                                }
+
+                                m5_sede = rs16.getBoolean("m.m5_sede") ? "SI" : "NO";
+
+                                String sql16C = "SELECT nome,idcomune,nome_provincia,regione FROM comuni WHERE idcomune  = " + rs16.getString("m.m5_comune_localizzazione");
+
+                                try (Statement st16C = db1.getConnection().createStatement(); ResultSet rs16C = st16C.executeQuery(sql16C)) {
+                                    if (rs16C.next()) {
+                                        m5_comune_localizzazione = rs16C.getString(1).toUpperCase();
+                                    }
+                                }
+
+                                m5_totale_fabbisogno = rs16.getString("m.m5_totale_fabbisogno").trim();
+
+                                m5_misura_individuata = rs16.getBoolean("m.m5_misura_individuata") ? "SI" : "NO";
+
+                                if (m5_misura_individuata.equals("SI")) {
+
+                                    switch (rs16.getString("m.m5_misura_si_tipo")) {
+                                        case "01" ->
+                                            m5_misura_si_tipo = "NAZIONALE";
+                                        case "02" ->
+                                            m5_misura_si_tipo = "CIRCOSCRIZIONALE";
+                                        case "03" ->
+                                            m5_misura_si_tipo = "REGIONALE";
+                                        case "04" ->
+                                            m5_misura_si_tipo = "CREDITO ORDINARIO";
+                                        case "05" ->
+                                            m5_misura_si_tipo = "AUTOFINANZIAMENTO, FONDI PROPRI";
+                                        case "06" ->
+                                            m5_misura_si_tipo = "MICROCREDITO TRAMITE ENM";
+                                        case "07" ->
+                                            m5_misura_si_tipo = "ALTRO";
+                                    }
+                                } else {
+                                    switch (rs16.getString("m.m5_misura_no_motivazione")) {
+                                        case "01" ->
+                                            m5_misura_no_motivazione = "Poca convinzione dell'allievo sull'idea imprenditoriale";
+                                        case "02" ->
+                                            m5_misura_no_motivazione = "Poca convenienza e/o difficile realizzazione dell'idea imprenditoriale";
+                                        case "03" ->
+                                            m5_misura_no_motivazione = "Indecisione dell'allievo sulla scelta auto-imprenditoriale";
+                                        case "04" ->
+                                            m5_misura_no_motivazione = "Carenza di motivazione personale";
+                                        case "05" ->
+                                            m5_misura_no_motivazione = "Difficoltà a reperire finanziamenti";
+                                        case "06" ->
+                                            m5_misura_no_motivazione = "Difficoltà burocratiche legate a permessi, certificazioni, ecc.";
+                                        case "07" ->
+                                            m5_misura_no_motivazione = "Mancanza di strumenti finanziari di agevolazione";
+                                        case "08" ->
+                                            m5_misura_no_motivazione = "Altro";
+                                    }
+                                }
+                            }
+                        }
+
                         AtomicInteger indicecolonna = new AtomicInteger(0);
                         XSSFRow row = getRow(sh1, indiceriga.get());
                         indiceriga.addAndGet(1);
@@ -926,20 +1049,44 @@ public class Toscana_gestione {
                         setCell(getCell(row, indicecolonna.addAndGet(1)), cip);
                         setCell(getCell(row, indicecolonna.addAndGet(1)), dataavvio);
                         setCell(getCell(row, indicecolonna.addAndGet(1)), datachiusura);
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), statoprogetto);
                         setCell(getCell(row, indicecolonna.addAndGet(1)), cellStyle, rs0.getString("a.orec_totali") == null ? "0.0" : rs0.getString("a.orec_totali").trim(), false, true);
 
                         setCell(getCell(row, indicecolonna.addAndGet(1)), rs0.getDate("a.data_inizio_UD11") == null ? "" : sdfITA.format(rs0.getDate("a.data_inizio_UD11")));
                         setCell(getCell(row, indicecolonna.addAndGet(1)), rs0.getDate("a.data_fine_UD11") == null ? "" : sdfITA.format(rs0.getDate("a.data_fine_UD11")));
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), cellStyle, String.valueOf(oreUD11), false, true);
+
                         setCell(getCell(row, indicecolonna.addAndGet(1)), cellStyle, rs0.getString("a.orec_fasea") == null ? "0.0" : rs0.getString("a.orec_fasea").trim(), false, true);
                         setCell(getCell(row, indicecolonna.addAndGet(1)), cellStyle, rs0.getString("a.orec_faseb") == null ? "0.0" : rs0.getString("a.orec_faseb").trim(), false, true);
                         setCell(getCell(row, indicecolonna.addAndGet(1)), cellStyleINT, rs0.getString("a.ud_ok_A") == null ? "0.0" : rs0.getString("a.ud_ok_A").trim(), false, true);
                         setCell(getCell(row, indicecolonna.addAndGet(1)), cellStyleINT, rs0.getString("a.ud_ok_B") == null ? "0.0" : rs0.getString("a.ud_ok_B").trim(), false, true);
                         setCell(getCell(row, indicecolonna.addAndGet(1)), statopartecipazioneFINALE);
 
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), m5_grado_completezza);
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), m5_probabilita);
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), m5_forma_giuridica);
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), m5_ateco);
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), m5_sede);
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), m5_comune_localizzazione);
+                        if (m5_totale_fabbisogno.equals("")) {
+
+                            setCell(getCell(row, indicecolonna.addAndGet(1)), "");
+                        } else {
+                            setCell(getCell(row, indicecolonna.addAndGet(1)), cellStyleCUR, m5_totale_fabbisogno, false, true);
+
+                        }
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), m5_misura_individuata);
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), m5_misura_si_tipo);
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), "");
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), m5_misura_no_motivazione);
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), "");
+
                         maxrow.set(indicecolonna.get());
+
                     }
                 }
-                for (int i = 0; i < 56; i++) {
+
+                for (int i = 0; i < 80; i++) {
                     sh1.autoSizeColumn(i);
                 }
                 wb.write(outputStream);
@@ -1232,6 +1379,7 @@ public class Toscana_gestione {
 
                         AtomicInteger ALLIEVIISCRITTI = new AtomicInteger(0);
                         AtomicInteger ALLIEVIVALIDATI = new AtomicInteger(0);
+                        AtomicInteger ALLIEVIIDONEI = new AtomicInteger(0);
                         int idpr = rs0.getInt("pf.idprogetti_formativi");
                         String sql1_foglio2 = "SELECT a.idallievi,a.id_statopartecipazione FROM allievi a WHERE a.idprogetti_formativi=" + idpr;
                         try (ResultSet rs1 = db1.getConnection().createStatement().executeQuery(sql1_foglio2)) {
@@ -1239,12 +1387,15 @@ public class Toscana_gestione {
                                 String statoallievo = rs1.getString("a.id_statopartecipazione");
                                 if (statoallievo.equals("15")) {
                                     ALLIEVIVALIDATI.addAndGet(1);
+                                } else if (statoallievo.equals("18")) {
+                                    ALLIEVIIDONEI.addAndGet(1);
                                 }
                                 ALLIEVIISCRITTI.addAndGet(1);
                             }
                         }
                         setCell(getCell(row, indicecolonna.addAndGet(1)), String.valueOf(ALLIEVIISCRITTI.get()));
                         setCell(getCell(row, indicecolonna.addAndGet(1)), String.valueOf(ALLIEVIVALIDATI.get()));
+                        setCell(getCell(row, indicecolonna.addAndGet(1)), String.valueOf(ALLIEVIIDONEI.get()));
                     }
                 }
 
@@ -1315,8 +1466,8 @@ public class Toscana_gestione {
         FaseA FA = new FaseA(false);
 
         Db_Gest db0 = new Db_Gest(FA.getHost());
-        String sql0 = "SELECT a.idallievi,a.idprogetti_formativi,a.gruppo_faseB FROM allievi a"
-                + " WHERE a.orec_totali>=70 AND a.idallievi NOT IN (SELECT d.idallievo FROM documenti_allievi d WHERE d.tipo=22)";
+        String sql0 = "SELECT a.idallievi,a.idprogetti_formativi,a.gruppo_faseB FROM allievi a, progetti_formativi p WHERE a.idprogetti_formativi=p.idprogetti_formativi "
+                + "AND a.orec_totali>=70 AND p.stato IN ('F','DVB','IV','CK') AND a.idallievi NOT IN (SELECT d.idallievo FROM documenti_allievi d WHERE d.tipo=22)";
 
         try (Statement st = db0.getConnection().createStatement(); ResultSet rs = st.executeQuery(sql0)) {
             while (rs.next()) {
@@ -1612,7 +1763,7 @@ public class Toscana_gestione {
         Db_Gest db0 = new Db_Gest(FA.getHost());
 
         List<Long> idallievi = new ArrayList<>();
-        String sql = "SELECT a.idallievi FROM allievi a WHERE a.id_statopartecipazione='15' ";
+        String sql = "SELECT a.idallievi FROM allievi a WHERE a.id_statopartecipazione='15'";
         try (Statement st = db0.getConnection().createStatement(); ResultSet rs = st.executeQuery(sql)) {
             while (rs.next()) {
                 idallievi.add(rs.getLong(1));
@@ -1699,7 +1850,7 @@ public class Toscana_gestione {
                                     } else {
                                         String sql2_P = "SELECT r.durataconvalidata,p.datalezione FROM presenzelezioni p, presenzelezioniallievi r, lezioni_modelli l , lezione_calendario lc "
                                                 + "WHERE p.idpresenzelezioni=r.idpresenzelezioni AND l.id_lezionimodelli=p.idlezioneriferimento AND l.id_lezionecalendario=lc.id_lezionecalendario "
-                                                + "AND r.idallievi=" + idallievo + " AND r.convalidata=1 AND lc.codice_ud='" + m1 + "'";
+                                                + "AND r.idallievi=" + idallievo + " AND r.convalidata=1 AND lc.codice_ud='" + m1 + "' AND r.durataconvalidata > 0";
                                         try (Statement st2P = db0.getConnection().createStatement(); ResultSet rs2P = st2P.executeQuery(sql2_P)) {
                                             if (rs2P.next()) {
                                                 //PRESENZA MODULI SINGOLI
@@ -1836,8 +1987,63 @@ public class Toscana_gestione {
 
         db0.closeDB();
     }
+
+    
+    public void imposta_fineattivita() {
+        Db_Gest db = new Db_Gest(this.host);
+        String sql0 = "SELECT p.idprogetti_formativi FROM progetti_formativi p WHERE p.stato = 'ATB' AND p.`end` < CURDATE()";
+        try (Statement st0 = db.getConnection().createStatement(); ResultSet rs0 = st0.executeQuery(sql0)) {
+            while (rs0.next()) {
+                String idpr = rs0.getString(1);
+                String sql1 = "SELECT a.idallievi,a.gruppo_faseB,a.idprogetti_formativi FROM allievi a "
+                        + "WHERE a.id_statopartecipazione = '15' "
+                        + "AND a.idprogetti_formativi = " + idpr;
+                boolean fineattivita = true;
+                try (Statement st1 = db.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
+                    while (rs1.next()) {
+                        String idallievi = rs1.getString(1);
+                        String gruppo_fb = rs1.getString(2);
+                        String sql2 = "SELECT la.convalidata,p.datalezione FROM presenzelezioniallievi la, presenzelezioni p WHERE la.idallievi=" + idallievi + " AND p.idpresenzelezioni=la.idpresenzelezioni "
+                                + "AND p.idlezioneriferimento IN (SELECT m.id_lezionimodelli FROM lezioni_modelli m WHERE m.id_modelli_progetto IN "
+                                + "(SELECT mp.id_modello FROM modelli_progetti mp WHERE mp.id_progettoformativo = " + idpr + ") AND m.gruppo_faseB IN (0," + gruppo_fb + "))";
+                        try (Statement st2 = db.getConnection().createStatement(); ResultSet rs2 = st2.executeQuery(sql2)) {
+                            while (rs2.next()) {
+                                boolean conv = rs2.getBoolean(1);
+                                if (!conv) {
+                                    log.log(Level.WARNING, "PROGETTO {0} - ALLIEVO {1} : NON ANCORA CONVALIDATA LEZIONE {2}", new Object[]{idpr, idallievi, rs2.getString(2)});
+                                    fineattivita = false;
+                                    break;
+                                }
+                            }
+                        } catch (Exception ex2) {
+                            log.severe(estraiEccezione(ex2));
+                        }
+                    }
+                } catch (Exception ex2) {
+                    log.severe(estraiEccezione(ex2));
+                }
+                if (fineattivita) {
+                    try (Statement st3 = db.getConnection().createStatement()) {
+                        String upd = "UPDATE progetti_formativi SET stato = 'F' WHERE idprogetti_formativi=" + idpr;
+                        boolean es3 = st3.executeUpdate(upd) > 0;
+                        if (es3) {
+                            log.log(Level.INFO, "PROGETTO {0} IMPOSTATO IN FINE ATTIVITA'.", idpr);
+                        }else{
+                            log.log(Level.SEVERE, "ERRORE NELL''UPDATE DEL PROGETTO {0}", idpr);
+                        }
+                    }
+                } else {
+                    log.log(Level.INFO, "PROGETTO {0} ANCORA DA VALIDARE.", idpr);
+                }
+            }
+        } catch (Exception ex1) {
+            log.severe(estraiEccezione(ex1));
+        }
+        db.closeDB();
+    }
     
 //    public static void main(String[] args) {
-//        new Toscana_gestione(false).report_allievi();
+//        new Toscana_gestione(false).imposta_fineattivita();
 //    }
+
 }
