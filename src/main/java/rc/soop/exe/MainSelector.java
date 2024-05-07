@@ -10,6 +10,7 @@ import rc.soop.accreditamento.Engine;
 import rc.soop.arti.Arti;
 import static rc.soop.exe.Utils.estraiEccezione;
 import static rc.soop.gestione.Create.crearegistri;
+import static rc.soop.gestione.Create.solocomplessivi;
 import rc.soop.gestione.Toscana_gestione;
 
 /**
@@ -160,6 +161,9 @@ public class MainSelector {
                 } catch (Exception e) {
                     log.severe(estraiEccezione(e));
                 }
+            }
+            case 9 -> { //SOLO REGISTRI COMPLESSIVI
+                solocomplessivi(testing);
             }
 
             default ->

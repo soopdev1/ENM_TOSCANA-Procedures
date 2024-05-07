@@ -1999,20 +1999,26 @@ public class Toscana_gestione {
                         + "WHERE a.id_statopartecipazione = '15' "
                         + "AND a.idprogetti_formativi = " + idpr;
                 boolean fineattivita = true;
+                List<String> idlezioniconvalidate = new ArrayList<>();
                 try (Statement st1 = db.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
                     while (rs1.next()) {
                         String idallievi = rs1.getString(1);
                         String gruppo_fb = rs1.getString(2);
-                        String sql2 = "SELECT la.convalidata,p.datalezione FROM presenzelezioniallievi la, presenzelezioni p WHERE la.idallievi=" + idallievi + " AND p.idpresenzelezioni=la.idpresenzelezioni "
+                        String sql2 = "SELECT la.convalidata,p.datalezione,p.idlezioneriferimento FROM presenzelezioniallievi la, presenzelezioni p WHERE la.idallievi=" + idallievi + " AND p.idpresenzelezioni=la.idpresenzelezioni "
                                 + "AND p.idlezioneriferimento IN (SELECT m.id_lezionimodelli FROM lezioni_modelli m WHERE m.id_modelli_progetto IN "
-                                + "(SELECT mp.id_modello FROM modelli_progetti mp WHERE mp.id_progettoformativo = " + idpr + ") AND m.gruppo_faseB IN (0," + gruppo_fb + "))";
+                                + "(SELECT mp.id_modello FROM modelli_progetti mp WHERE mp.id_progettoformativo = " + idpr + ") AND m.gruppo_faseB IN (0," + gruppo_fb + "))"
+                                + " ORDER BY p.datalezione ASC , la.convalidata DESC";
                         try (Statement st2 = db.getConnection().createStatement(); ResultSet rs2 = st2.executeQuery(sql2)) {
                             while (rs2.next()) {
                                 boolean conv = rs2.getBoolean(1);
-                                if (!conv) {
+                                if (conv) {
+                                    idlezioniconvalidate.add(rs2.getString(3));
+                                } else {
+                                    if (!idlezioniconvalidate.contains(rs2.getString(3))) {
                                     log.log(Level.WARNING, "PROGETTO {0} - ALLIEVO {1} : NON ANCORA CONVALIDATA LEZIONE {2}", new Object[]{idpr, idallievi, rs2.getString(2)});
-                                    fineattivita = false;
-                                    break;
+                                        fineattivita = false;
+                                        break;
+                                    }
                                 }
                             }
                         } catch (Exception ex2) {

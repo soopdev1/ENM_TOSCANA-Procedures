@@ -33,58 +33,12 @@ import static rc.soop.gestione.Toscana_gestione.log;
  */
 public class Create {
 
-    public static void crearegistri(boolean testing) {
-        boolean print = false;
-        boolean save = true;
+    public static void solocomplessivi(boolean testing) {
 
-        log.log(Level.INFO, "PRINT: {0}", print);
-        log.log(Level.INFO, "SAVE: {0}", save);
-
-        List<Integer> list_id = new ArrayList<>();
-
-        list_id.add(13);
         try {
+
             FaseA FA = new FaseA(testing);
-            Db_Gest db0 = new Db_Gest(FA.getHost());
-
-            String sql0 = "SELECT DISTINCT(mp.id_progettoformativo) "
-                    + "FROM lezioni_modelli lm, modelli_progetti mp "
-                    + "WHERE mp.id_modello=lm.id_modelli_progetto "
-                    + "AND lm.tipolez='F' AND lm.giorno = DATE_SUB(CURDATE(), INTERVAL 1 DAY)";
-
-            try (Statement st0 = db0.getConnection().createStatement(); ResultSet rs0 = st0.executeQuery(sql0)) {
-                while (rs0.next()) {
-                    list_id.add(rs0.getInt(1));
-                }
-            }
-            db0.closeDB();
-
             FaseB FB = new FaseB(testing);
-
-            list_id.forEach(idpr -> {
-
-                //  FASE A
-                try {
-                    log.log(Level.INFO, "REPORT FASE A - IDPR {0}", idpr);
-                    List<Lezione> calendar1 = FA.calcolaegeneraregistrofasea(idpr, FA.getHost(), print, save, false);
-
-                    FA.registro_aula_FaseA(idpr, FA.getHost(), save, calendar1);
-                    log.log(Level.INFO, "COMPLETATO REPORT FASE A - IDPR {0}", idpr);
-                } catch (Exception e1) {
-                    log.severe(estraiEccezione(e1));
-                }
-                //  FASE B
-                try {
-                    log.log(Level.INFO, "REPORT FASE B - IDPR {0}", idpr);
-                    List<Lezione> calendar2 = FB.calcolaegeneraregistrofaseb(idpr, FA.getHost(), print, save, false);
-
-                    FB.registro_aula_FaseB(idpr, FA.getHost(), save, calendar2);
-                    log.log(Level.INFO, "COMPLETATO REPORT FASE A - IDPR {0}", idpr);
-                } catch (Exception e1) {
-                    log.severe(estraiEccezione(e1));
-                }
-
-            });
 
             List<Integer> list_id_conclusi = new ArrayList<>();
 
@@ -110,11 +64,20 @@ public class Create {
                     List<Lezione> fad_b = FB.calcolaegeneraregistrofaseb(idpr, c1.getHost(), false, false, false);
 
                     List<Lezione> ca = new ArrayList<>();
-                    ca.addAll(pr_a);
-                    ca.addAll(fad_a);
+                    if (pr_a != null && !pr_a.isEmpty()) {
+                        ca.addAll(pr_a);
+                    }
+                    if (fad_a != null && !fad_a.isEmpty()) {
+                        ca.addAll(fad_a);
+                    }
+
                     List<Lezione> cb = new ArrayList<>();
-                    cb.addAll(pr_b);
-                    cb.addAll(fad_b);
+                    if (pr_b != null && !pr_b.isEmpty()) {
+                        cb.addAll(pr_b);
+                    }
+                    if (fad_b != null && !fad_b.isEmpty()) {
+                        cb.addAll(fad_b);
+                    }
 
                     sort(ca, (emp1, emp2) -> emp1.getGiorno().compareTo(emp2.getGiorno()));
                     sort(cb, (emp1, emp2) -> emp1.getGiorno().compareTo(emp2.getGiorno()));
@@ -126,9 +89,64 @@ public class Create {
                     log.severe(estraiEccezione(e1));
                 }
             });
+
+        } catch (Exception ex0) {
+            log.severe(estraiEccezione(ex0));
+        }
+
+    }
+
+    public static void crearegistri(boolean testing) {
+        List<Integer> list_id = new ArrayList<>();
+
+//        list_id.add(13);
+        try {
+            FaseA FA = new FaseA(testing);
+            Db_Gest db0 = new Db_Gest(FA.getHost());
+
+            String sql0 = "SELECT DISTINCT(mp.id_progettoformativo) "
+                    + "FROM lezioni_modelli lm, modelli_progetti mp "
+                    + "WHERE mp.id_modello=lm.id_modelli_progetto "
+                    + "AND lm.tipolez='F' AND lm.giorno = DATE_SUB(CURDATE(), INTERVAL 1 DAY)";
+
+            try (Statement st0 = db0.getConnection().createStatement(); ResultSet rs0 = st0.executeQuery(sql0)) {
+                while (rs0.next()) {
+                    list_id.add(rs0.getInt(1));
+                }
+            }
+            db0.closeDB();
+
+            FaseB FB = new FaseB(testing);
+
+            list_id.forEach(idpr -> {
+
+                //  FASE A
+                try {
+                    log.log(Level.INFO, "REPORT FASE A - IDPR {0}", idpr);
+                    List<Lezione> calendar1 = FA.calcolaegeneraregistrofasea(idpr, FA.getHost(), false, true, false);
+
+                    FA.registro_aula_FaseA(idpr, FA.getHost(), true, calendar1);
+                    log.log(Level.INFO, "COMPLETATO REPORT FASE A - IDPR {0}", idpr);
+                } catch (Exception e1) {
+                    log.severe(estraiEccezione(e1));
+                }
+                //  FASE B
+                try {
+                    log.log(Level.INFO, "REPORT FASE B - IDPR {0}", idpr);
+                    List<Lezione> calendar2 = FB.calcolaegeneraregistrofaseb(idpr, FA.getHost(), false, true, false);
+                    FB.registro_aula_FaseB(idpr, FA.getHost(), true, calendar2);
+                    log.log(Level.INFO, "COMPLETATO REPORT FASE A - IDPR {0}", idpr);
+                } catch (Exception e1) {
+                    log.severe(estraiEccezione(e1));
+                }
+
+            });
+
         } catch (Exception e) {
             log.severe(estraiEccezione(e));
         }
+
+        solocomplessivi(testing);
     }
 
     public static void gestisciorerendicontabili(LinkedList<Presenti> report, int idpr, String host, Lezione cal) {
