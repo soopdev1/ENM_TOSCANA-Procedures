@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.CONCUR_UPDATABLE;
 import static java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE;
 import java.sql.ResultSetMetaData;
@@ -16,7 +17,12 @@ import java.util.List;
 import java.util.Properties;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.logging.Level;
+import org.apache.commons.lang3.StringUtils;
 import static org.apache.commons.lang3.StringUtils.stripAccents;
+import org.joda.time.DateTime;
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
 import rc.soop.exe.Comuni_rc;
 import rc.soop.exe.DatiDiscente;
 import rc.soop.exe.ExcelDomande;
@@ -793,5 +799,139 @@ public class Db_Gest {
         }
         return null;
     }
+    
+    
+    public List<Registro_completo> registro_modello6(int idpr) {
+        List<Registro_completo> registro = new ArrayList<>();
+        try {
+            //FAD
+            String sql = "SELECT * FROM registro_completo WHERE idprogetti_formativi = " + idpr + " GROUP BY ruolo,idutente,data,gruppofaseb ORDER BY data,gruppofaseb";
+            System.out.println("rc.so.db.Database.registro_modello6() "+sql);
+            try (Statement st = this.c.createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY); ResultSet rs = st.executeQuery(sql)) {
+                while (rs.next()) {
 
+                    long orerend = rs.getLong(21);
+                    Registro_completo rc = new Registro_completo(
+                            rs.getInt(1),
+                            rs.getInt(2),
+                            rs.getInt(3),
+                            rs.getString(4),
+                            new DateTime(rs.getDate(5).getTime()),
+                            rs.getString(6),
+                            rs.getInt(7),
+                            rs.getString(8),
+                            rs.getString(9),
+                            rs.getLong(10),
+                            rs.getString(11),
+                            rs.getString(12),
+                            rs.getInt(13),
+                            rs.getString(14),
+                            rs.getString(15),
+                            rs.getString(16),
+                            rs.getString(17),
+                            rs.getString(18),
+                            rs.getString(19),
+                            rs.getLong(20),
+                            orerend,
+                            rs.getInt(23));
+                    registro.add(rc);
+                }
+            }
+
+            //PRESENZA
+            String sql1 = "SELECT * FROM presenzelezioni p, progetti_formativi f, lezioni_modelli lm, lezione_calendario lc , docenti d "
+                    + " WHERE d.iddocenti=p.iddocente AND lc.id_lezionecalendario=lm.id_lezionecalendario AND lm.id_lezionimodelli=p.idlezioneriferimento AND "
+                    + " p.idprogetto=f.idprogetti_formativi AND p.idprogetto = " + idpr + " ORDER BY p.datalezione,p.orainizio;";            
+            System.out.println("rc.so.db.Database.registro_modello6() "+sql1);          
+            try (Statement st1 = this.c.createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY); ResultSet rs1 = st1.executeQuery(sql1)) {
+                while (rs1.next()) {
+                    String sql2 = "SELECT * FROM presenzelezioniallievi a, allievi l WHERE a.idallievi=l.idallievi AND a.idpresenzelezioni = "
+                            + rs1.getInt("p.idpresenzelezioni")
+                            + " AND a.convalidata = 1 GROUP BY l.idallievi";
+
+                    try (Statement st2 = this.c.createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY); ResultSet rs2 = st2.executeQuery(sql2)) {
+
+                        int numpartecipanti = 0;
+                        while (rs2.next()) {
+                            numpartecipanti++;
+                        }
+                        rs2.beforeFirst();
+
+                        long durata = calcolaintervallomillis(rs1.getString("p.orainizio"), rs1.getString("p.orafine"));
+
+                        String fase = rs1.getString("lc.codice_ud").startsWith("A") ? "A" : "B";
+
+                        int gruppofaseb = fase.equals("A") ? 0 : rs1.getInt("lm.gruppo_faseB");
+
+                        Registro_completo docente = new Registro_completo(0,
+                                idpr,
+                                rs1.getInt("f.idsoggetti_attuatori"),
+                                rs1.getString("f.cip"),
+                                new DateTime(rs1.getDate("p.datalezione").getTime()),
+                                rs1.getString("f.cip") + "_" + fase + "_" + rs1.getString("lc.codice_ud") + "_" + StringUtils.replace(rs1.getString("p.datalezione"), "-", ""),
+                                numpartecipanti,
+                                rs1.getString("p.orainizio"),
+                                rs1.getString("p.orafine"),
+                                durata,
+                                rs1.getString("lc.codice_ud"),
+                                fase,
+                                gruppofaseb,
+                                "DOCENTE",
+                                rs1.getString("d.cognome"),
+                                rs1.getString("d.nome"),
+                                rs1.getString("d.email"),
+                                rs1.getString("p.orainizio"),
+                                rs1.getString("p.orafine"),
+                                durata,
+                                durata,
+                                rs1.getInt("d.iddocenti"));
+                        registro.add(docente);
+
+                        while (rs2.next()) {
+
+                            Registro_completo rc = new Registro_completo(0,
+                                    idpr,
+                                    rs1.getInt("f.idsoggetti_attuatori"),
+                                    rs1.getString("f.cip"),
+                                    new DateTime(rs1.getDate("p.datalezione").getTime()),
+                                    rs1.getString("f.cip") + "_" + fase + "_" + rs1.getString("lc.codice_ud") + "_" + StringUtils.replace(rs1.getString("p.datalezione"), "-", ""),
+                                    numpartecipanti,
+                                    rs1.getString("p.orainizio"),
+                                    rs1.getString("p.orafine"),
+                                    calcolaintervallomillis(rs1.getString("p.orainizio"), rs1.getString("p.orafine")),
+                                    rs1.getString("lc.codice_ud"),
+                                    fase,
+                                    gruppofaseb,
+                                    "ALLIEVO",
+                                    rs2.getString("l.cognome"),
+                                    rs2.getString("l.nome"),
+                                    rs2.getString("l.email"),
+                                    rs2.getString("a.orainizio"),
+                                    rs2.getString("a.orafine"),
+                                    rs2.getLong("a.durata"),
+                                    rs2.getLong("a.durataconvalidata"),
+                                    rs2.getInt("l.idallievi"));
+                            registro.add(rc);
+                        }
+                    }
+                }
+            }
+
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
+        }
+        return registro;
+    }
+
+    
+    private static long calcolaintervallomillis(String orastart, String oraend) {
+        try {
+            DateTime st_data1 = new DateTime(2000, 1, 1, Integer.parseInt(orastart.split(":")[0]), Integer.parseInt(orastart.split(":")[1]));
+            DateTime st_data2 = new DateTime(2000, 1, 1, Integer.parseInt(oraend.split(":")[0]), Integer.parseInt(oraend.split(":")[1]));
+            Period p = new Period(st_data1, st_data2, PeriodType.millis());
+            return p.getValue(0);
+        } catch (Exception e) {
+            return 0L;
+        }
+    }
 }

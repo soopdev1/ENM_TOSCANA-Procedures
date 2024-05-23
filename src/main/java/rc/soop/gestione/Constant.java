@@ -461,7 +461,7 @@ public class Constant {
     }
 
     public static final long MAX = 18000000;
-
+    
     public static long convertHours(String ore) {
         try {
             double d1 = Double.parseDouble(ore);

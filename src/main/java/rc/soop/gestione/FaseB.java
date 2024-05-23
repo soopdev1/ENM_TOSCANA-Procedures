@@ -582,11 +582,13 @@ public class FaseB {
                                 }
                             });
                             double ore = Double.parseDouble(cal.getOre()) + Double.parseDouble(cal2.getOre());
-                            calendar.add(new Lezione(cal.getId(), doc1,
+                            
+                             Lezione l2temp = new Lezione(cal.getId(), doc1,
                                     cal.getGiorno(), cal.getStart(), cal2.getEnd(),
                                     cal.getCodiceud() + "_" + cal2.getCodiceud(),
-                                    Constant.doubleformat.format(ore), cal.getGruppo(), cal.getNomestanza()));
-
+                                    Constant.doubleformat.format(ore), cal.getGruppo(), cal.getNomestanza());
+                            l2temp.setMpid_modello(cal.getMpid_modello());
+                            calendar.add(l2temp);                            
                         } else {
                             if (cal3 == null || (!cal3.getGiorno().equals(cal.getGiorno())) || cal3.getGruppo() != cal.getGruppo()) {
                                 calendar.add(cal);

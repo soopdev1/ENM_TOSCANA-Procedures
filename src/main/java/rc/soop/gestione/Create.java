@@ -6,6 +6,7 @@
 package rc.soop.gestione;
 
 import com.google.common.base.Splitter;
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -13,6 +14,7 @@ import static java.util.Collections.sort;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
@@ -205,8 +207,8 @@ public class Create {
 
                     });
 
-                    long millischeck = nuova_rendicontazione_ore(millis_rendicontabili.get(), idpr, host);
-                    long millischeck1 = nuova_rendicontazione_ore(cnsmr.getMillistotaleore(), idpr, host);
+                    long millischeck = nuova_rendicontazione_ore(millis_rendicontabili.get());
+                    long millischeck1 = nuova_rendicontazione_ore(cnsmr.getMillistotaleore());
 
                     long ore = convertHours(cal.getOre());
 
@@ -251,8 +253,8 @@ public class Create {
                         }
                     });
 
-                    long millischeck = nuova_rendicontazione_ore(millis_rendicontabili_DOCENTE.get(), idpr, host);
-                    long millischeck1 = nuova_rendicontazione_ore(doc1.getMillistotaleore(), idpr, host);
+                    long millischeck = nuova_rendicontazione_ore(millis_rendicontabili_DOCENTE.get());
+                    long millischeck1 = nuova_rendicontazione_ore(doc1.getMillistotaleore());
 
                     String sqloredocente = "SELECT l1.ore FROM lezioni_modelli l, lezione_calendario l1, docenti d1"
                             + " WHERE l1.id_lezionecalendario=l.id_lezionecalendario AND l.id_modelli_progetto=" + cal.getMpid_modello()
@@ -265,7 +267,7 @@ public class Create {
                                 + " AND l.giorno='" + cal.getGiorno() + "' AND l.gruppo_faseB = " + cal.getGruppo()
                                 + " AND l.id_docente=d1.iddocenti AND d1.email='" + doc1.getEmail() + "';";
                     }
-
+                    
                     long oredocente = 0;
 
                     Db_Gest db0 = new Db_Gest(host);
@@ -304,20 +306,36 @@ public class Create {
             log.severe(estraiEccezione(e));
         }
     }
+    
+//    public static long nuova_rendicontazione_ore(long millis, int idpr, String host) {
+//        try {
+//            Db_Gest db0 = new Db_Gest(host);
+//            List<Integer> listpr = db0.elencoidnuovarendicontazione();
+//            db0.closeDB();
+//            if (listpr.contains(idpr)) {
+//                long real = millis / 1800000;
+//                return real * 1800000;
+//            }
+//        } catch (Exception e1) {
+//            log.severe(estraiEccezione(e1));
+//        }
+//        return millis;
+//    }
 
-    public static long nuova_rendicontazione_ore(long millis, int idpr, String host) {
+    public static long nuova_rendicontazione_ore(long millis) { //2024
         try {
-            Db_Gest db0 = new Db_Gest(host);
-            List<Integer> listpr = db0.elencoidnuovarendicontazione();
-            db0.closeDB();
-            if (listpr.contains(idpr)) {
-                long real = millis / 1800000;
-                return real * 1800000;
+            long ora = 3600000L;
+            long min_45 = 2700000L;
+            long resto = millis % ora;
+            int hours = new BigDecimal(TimeUnit.MILLISECONDS.toHours(millis)).intValueExact();
+            if (resto >= min_45) {
+                hours++;
             }
-        } catch (Exception e1) {
-            log.severe(estraiEccezione(e1));
+            return hours * ora;
+        } catch (Exception e) {
+            log.severe(estraiEccezione(e));
         }
         return millis;
     }
-
+    
 }
