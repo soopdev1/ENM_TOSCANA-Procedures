@@ -577,14 +577,15 @@ public class Db_Accr {
     public List<Utenti> list_Allievi_noAccento(int idpr) {
         List<Utenti> out = new ArrayList<>();
         try {
-            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email FROM allievi WHERE id_statopartecipazione='01' AND idprogetti_formativi = " + idpr;
+            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE idprogetti_formativi = " + idpr;
             try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
                 while (rs.next()) {
                     Utenti u = new Utenti(rs.getInt("idallievi"),
                             stripAccents(rs.getString("cognome").toUpperCase()).trim(),
                             stripAccents(rs.getString("nome").toUpperCase()).trim(),
                             rs.getString("codicefiscale").toUpperCase(), "ALLIEVO",
-                            rs.getString("email").toLowerCase());
+                            rs.getString("email").toLowerCase(), 
+                            rs.getString("gruppo_faseB"));
                     out.add(u);
                 }
             }
@@ -597,14 +598,15 @@ public class Db_Accr {
     public List<Utenti> list_Allievi_noAccento(int idpr, int gruppo) {
         List<Utenti> out = new ArrayList<>();
         try {
-            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email FROM allievi WHERE id_statopartecipazione='01' AND idprogetti_formativi = " + idpr + " AND gruppo_faseB = " + gruppo;
+            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE idprogetti_formativi = " + idpr + " AND gruppo_faseB = " + gruppo;
             try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
                 while (rs.next()) {
                     Utenti u = new Utenti(rs.getInt("idallievi"),
                             stripAccents(rs.getString("cognome").toUpperCase()).trim(),
                             stripAccents(rs.getString("nome").toUpperCase()).trim(),
                             rs.getString("codicefiscale").toUpperCase(), "DISCENTE",
-                            rs.getString("email").toLowerCase());
+                            rs.getString("email").toLowerCase(),
+                            rs.getString("gruppo_faseB"));
                     out.add(u);
                 }
             }
@@ -617,14 +619,15 @@ public class Db_Accr {
     public List<Utenti> list_Allievi(int idpr) {
         List<Utenti> out = new ArrayList<>();
         try {
-            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email FROM allievi WHERE id_statopartecipazione='01' AND idprogetti_formativi = " + idpr;
+            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE idprogetti_formativi = " + idpr;
             try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
                 while (rs.next()) {
                     Utenti u = new Utenti(rs.getInt("idallievi"),
                             (rs.getString("cognome").toUpperCase().trim()),
                             (rs.getString("nome").toUpperCase().trim()),
                             rs.getString("codicefiscale").toUpperCase(), "DISCENTE",
-                            rs.getString("email").toLowerCase());
+                            rs.getString("email").toLowerCase(),
+                            rs.getString("gruppo_faseB"));
                     out.add(u);
                 }
             }
@@ -645,7 +648,7 @@ public class Db_Accr {
                             (rs.getString("cognome").toUpperCase().trim()),
                             (rs.getString("nome").toUpperCase().trim()),
                             rs.getString("codicefiscale").toUpperCase(), "DOCENTE",
-                            rs.getString("email").toLowerCase());
+                            rs.getString("email").toLowerCase(),"1");
                     out.add(u);
                 }
             }
@@ -666,7 +669,7 @@ public class Db_Accr {
                             stripAccents(rs.getString("cognome").toUpperCase().trim()),
                             stripAccents(rs.getString("nome").toUpperCase().trim()),
                             rs.getString("codicefiscale").toUpperCase(), "DOCENTE",
-                            rs.getString("email").toLowerCase());
+                            rs.getString("email").toLowerCase(),"1");
                     out.add(u);
                 }
             }

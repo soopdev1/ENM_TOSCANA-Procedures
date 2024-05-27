@@ -42,9 +42,6 @@ import java.sql.ResultSet;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.Calendar;
 import static java.util.Calendar.getInstance;
 import java.util.Date;
@@ -55,9 +52,7 @@ import java.util.List;
 import java.util.Locale;
 import static java.util.Locale.ITALY;
 import java.util.Map;
-import java.util.ResourceBundle;
 import java.util.StringTokenizer;
-import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
@@ -133,26 +128,26 @@ public class Constant {
     public static final String pathICC = "/home/tomcat/jar/sRGB.icc";
 
     // VARIABILI MS
-    public static final double coeff_faseA = 0.80;
-    public static final double coeff_faseB = 40.00;
-    public static final double coeff_docfasciaA = 146.25;
-    public static final double coeff_docfasciaB = 117.00;
-    public static final double coeff_ddr_dd = 1.3857457807511;
-    public static final String codice_yisu_neet = "MLPS-CLP-00081";
-    public static final String codice_yisu_ded = "ANPAL-CLP-00266";
-    public static final String codice_bb = "1375";
-    public static final String contodocentiA = "195149";// "91018";
-    public static final String contodocentiB = "191018";// "91019";
-    public static final String contoallievifaseA = "191020";// "91021";
-    public static final String contoallievifaseB = "191021";// "95149";
-    public static final String contodocentiA_DD = "UCS_ITA_19";
-    public static final String contodocentiB_DD = "UCS_ITA_20";
-    public static final String contoallievifaseA_DD = "UCS_ITA_22";
-    public static final String contoallievifaseB_DD = "UCS_MICRO_01";
-    public static final String percentuale_attribuzioneDD = "100";
-    public static final String tipologia_costo = "8";
-    public static final String tipologia_giustificativo = "16";
-    public static final String cf_soggetto_DD = "97538720588";
+//    public static final double coeff_faseA = 0.80;
+//    public static final double coeff_faseB = 40.00;
+//    public static final double coeff_docfasciaA = 146.25;
+//    public static final double coeff_docfasciaB = 117.00;
+//    public static final double coeff_ddr_dd = 1.3857457807511;
+//    public static final String codice_yisu_neet = "MLPS-CLP-00081";
+//    public static final String codice_yisu_ded = "ANPAL-CLP-00266";
+//    public static final String codice_bb = "1375";
+//    public static final String contodocentiA = "195149";// "91018";
+//    public static final String contodocentiB = "191018";// "91019";
+//    public static final String contoallievifaseA = "191020";// "91021";
+//    public static final String contoallievifaseB = "191021";// "95149";
+//    public static final String contodocentiA_DD = "UCS_ITA_19";
+//    public static final String contodocentiB_DD = "UCS_ITA_20";
+//    public static final String contoallievifaseA_DD = "UCS_ITA_22";
+//    public static final String contoallievifaseB_DD = "UCS_MICRO_01";
+//    public static final String percentuale_attribuzioneDD = "100";
+//    public static final String tipologia_costo = "8";
+//    public static final String tipologia_giustificativo = "16";
+//    public static final String cf_soggetto_DD = "97538720588";
 
     public static Logger createLog(String nameapp, String logpath) {
         try {
@@ -722,6 +717,24 @@ public class Constant {
 
     public static final NumberFormat numITA = NumberFormat.getCurrencyInstance(Locale.ITALY);
 
+    public static double roundDouble(double f, boolean converttoHours) {
+        try {
+            if (converttoHours) {
+                double hours = f / 1000.0 / 60.0 / 60.0;
+                BigDecimal bigDecimal = new BigDecimal(hours);
+                bigDecimal = bigDecimal.setScale(2, RoundingMode.HALF_EVEN);
+                return bigDecimal.doubleValue();
+            } else {
+                BigDecimal bigDecimal = new BigDecimal(f);
+                bigDecimal = bigDecimal.setScale(2, RoundingMode.HALF_EVEN);
+                return bigDecimal.doubleValue();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0.0;
+    }
+    
     public static String roundFloatAndFormat(float f, boolean converttoHours) {
         try {
 

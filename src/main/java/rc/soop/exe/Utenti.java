@@ -17,7 +17,9 @@ public class Utenti {
     int id;
     String cognome, nome, descrizione, cf, ruolo, email;
 
-    public Utenti(int id, String cognome, String nome, String cf, String ruolo, String email) {
+    String gruppofaseB;
+    
+    public Utenti(int id, String cognome, String nome, String cf, String ruolo, String email, String gruppofaseB) {
         this.id = id;
         this.cognome = cognome;
         this.nome = nome;
@@ -25,11 +27,23 @@ public class Utenti {
         this.cf = cf;
         this.ruolo = ruolo;
         this.email = email;
+        this.gruppofaseB = gruppofaseB;
     }
 
+    
     public Utenti() {
     }
 
+    public String getGruppofaseB() {
+        return gruppofaseB;
+    }
+
+    public void setGruppofaseB(String gruppofaseB) {
+        this.gruppofaseB = gruppofaseB;
+    }
+
+    
+    
     public String getDescrizione() {
         return descrizione;
     }

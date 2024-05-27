@@ -10,6 +10,8 @@ import java.io.File;
 import java.io.UnsupportedEncodingException;
 import static java.lang.Integer.parseInt;
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
@@ -252,5 +254,21 @@ public class Utils {
         } catch (Exception e) {
             return 0L;
         }
+    }
+    
+    public static double parseDouble(String f) {
+        try {
+            
+            if(f.contains(",")){
+                f = StringUtils.replace(f, ",", "\\.");
+            }
+            
+            BigDecimal bigDecimal = new BigDecimal(f);
+            bigDecimal = bigDecimal.setScale(2, RoundingMode.HALF_EVEN);
+            return bigDecimal.doubleValue();
+        } catch (Exception e) {
+        }
+        return 0.0;
+
     }
 }
