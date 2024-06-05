@@ -226,8 +226,6 @@ public class Utils {
         return riga;
     }
 
-    
-    
     public static String getJsonString(JsonObject base, String fieldname) {
         try {
             JsonPrimitive o1 = base.getAsJsonPrimitive(fieldname);
@@ -244,7 +242,7 @@ public class Utils {
         }
         return "";
     }
-    
+
     public static long calcolaintervallomillis(String orastart, String oraend) {
         try {
             DateTime st_data1 = new DateTime(2000, 1, 1, Integer.parseInt(orastart.split(":")[0]), Integer.parseInt(orastart.split(":")[1]));
@@ -255,14 +253,14 @@ public class Utils {
             return 0L;
         }
     }
-    
+
     public static double parseDouble(String f) {
         try {
-            
-            if(f.contains(",")){
+
+            if (f.contains(",")) {
                 f = StringUtils.replace(f, ",", "\\.");
             }
-            
+
             BigDecimal bigDecimal = new BigDecimal(f);
             bigDecimal = bigDecimal.setScale(2, RoundingMode.HALF_EVEN);
             return bigDecimal.doubleValue();
@@ -271,4 +269,16 @@ public class Utils {
         return 0.0;
 
     }
+
+    public static String ricavaGeneredaCF(String CF) {
+        String giorno = StringUtils.substring(CF, 9, 11);
+        String sesso;
+        if (parseIntR(giorno) < 32) {
+            sesso = "M";
+        } else {
+            sesso = "F";
+        }
+        return sesso;
+    }
+
 }

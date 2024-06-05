@@ -8,7 +8,6 @@ import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.CONCUR_UPDATABLE;
 import static java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE;
 import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,7 +16,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.logging.Level;
 import org.apache.commons.lang3.StringUtils;
 import static org.apache.commons.lang3.StringUtils.stripAccents;
 import org.joda.time.DateTime;
@@ -68,12 +66,12 @@ public class Db_Gest {
             p.put("useUnicode", "true");
             this.c = DriverManager.getConnection("jdbc:mysql://" + host, p);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.severe(estraiEccezione(ex));
             if (this.c != null) {
                 try {
                     this.c.close();
                 } catch (Exception ex1) {
-                    ex1.printStackTrace();
+                    log.severe(estraiEccezione(ex1));
                 }
             }
             this.c = null;
@@ -96,11 +94,12 @@ public class Db_Gest {
             p.put("useUnicode", "true");
             this.c = DriverManager.getConnection("jdbc:mysql://" + host, p);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.severe(estraiEccezione(ex));
             if (this.c != null) {
                 try {
                     this.c.close();
                 } catch (Exception ex1) {
+                    log.severe(estraiEccezione(ex1));
                 }
             }
             this.c = null;
@@ -112,7 +111,8 @@ public class Db_Gest {
             if (this.c != null) {
                 this.c.close();
             }
-        } catch (SQLException ex) {
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
     }
 
@@ -124,7 +124,7 @@ public class Db_Gest {
         String path = "-";
         try {
             String sql = "SELECT url FROM path WHERE id = ?";
-            try (PreparedStatement ps = this.c.prepareStatement(sql)) {
+            try (PreparedStatement ps = this.c.prepareStatement(sql, TYPE_SCROLL_INSENSITIVE, CONCUR_UPDATABLE)) {
                 ps.setString(1, id);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
@@ -132,8 +132,8 @@ public class Db_Gest {
                     }
                 }
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return path;
     }
@@ -142,13 +142,13 @@ public class Db_Gest {
         List<Integer> out = new ArrayList<>();
         try {
             String sql = "SELECT * FROM nuovarend";
-            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
+            try (Statement st = this.c.createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_UPDATABLE); ResultSet rs = st.executeQuery(sql)) {
                 while (rs.next()) {
                     out.add(rs.getInt(1));
                 }
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -162,8 +162,8 @@ public class Db_Gest {
                 ps.execute();
             }
             return true;
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return false;
     }
@@ -180,7 +180,7 @@ public class Db_Gest {
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -209,8 +209,8 @@ public class Db_Gest {
                 default -> {
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return "";
     }
@@ -218,14 +218,17 @@ public class Db_Gest {
     public int countDocumentConvenzioni(String username) {
         int var1 = 0;
         try {
-            String query = "select count(*) from docuserconvenzioni where username='" + username + "'";
-            try (PreparedStatement ps = this.c.prepareStatement(query); ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    var1 = rs.getInt(1);
+            String query = "select count(*) from docuserconvenzioni where username = ?";
+            try (PreparedStatement ps = this.c.prepareStatement(query)) {
+                ps.setString(1, username);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        var1 = rs.getInt(1);
+                    }
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.severe(estraiEccezione(ex));
         }
         return var1;
     }
@@ -233,14 +236,17 @@ public class Db_Gest {
     public String getInvioEmailROMA(String username) {
         String out = "0";
         try {
-            String query = "select username,sendmail from docuserconvenzioni where username='" + username + "' and codicedoc='CONV'";
-            try (PreparedStatement ps = this.c.prepareStatement(query); ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    out = rs.getString("sendmail");
+            String query = "select username,sendmail from docuserconvenzioni where username = ? and codicedoc='CONV'";
+            try (PreparedStatement ps = this.c.prepareStatement(query)) {
+                ps.setString(1, username);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        out = rs.getString("sendmail");
+                    }
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -248,14 +254,17 @@ public class Db_Gest {
     public String getConvenzioneROMA(String username) {
         String pathRoma = "";
         try {
-            String query = "select path from convenzioniroma where username = '" + username + "' order by timestamp desc limit 1";
-            try (PreparedStatement ps = this.c.prepareStatement(query); ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    pathRoma = rs.getString("path");
+            String query = "select path from convenzioniroma where username = ? order by timestamp desc limit 1";
+            try (PreparedStatement ps = this.c.prepareStatement(query)) {
+                ps.setString(1, username);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        pathRoma = rs.getString("path");
+                    }
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return pathRoma;
     }
@@ -306,53 +315,56 @@ public class Db_Gest {
                         ex1.setSTATODOMANDA(formatStatoDomanda(rs.getString("stato_domanda")));
                     }
 
-                    String sql2 = "SELECT * FROM usersvalori WHERE username= '" + USERNAME + "'";
-                    try (PreparedStatement ps2 = this.c.prepareStatement(sql2); ResultSet rs2 = ps2.executeQuery()) {
-                        while (rs2.next()) {
-                            String campo = rs2.getString("campo");
-                            String valore = rs2.getString("valore").toUpperCase().trim();
-                            String valore1 = rs2.getString("valore").toUpperCase().trim();
+                    String sql2 = "SELECT * FROM usersvalori WHERE username = ?";
+                    try (PreparedStatement ps2 = this.c.prepareStatement(sql2)) {
+                        ps2.setString(1, USERNAME);
+                        try (ResultSet rs2 = ps2.executeQuery()) {
+                            while (rs2.next()) {
+                                String campo = rs2.getString("campo");
+                                String valore = rs2.getString("valore").toUpperCase().trim();
+                                String valore1 = rs2.getString("valore").toUpperCase().trim();
 
-                            switch (campo) {
-                                case "sedeindirizzo" ->
-                                    ex1.setSEDELEGALEINDIRIZZO(valore.toUpperCase());
-                                case "sedecap" ->
-                                    ex1.setSEDELEGALECAP(valore.toUpperCase());
-                                case "sedecomune" -> {
-                                    if (!valore.equals("")) {
-                                        Comuni_rc c0 = comuni_rc.stream().filter(c1 -> (c1.getId() == parseIntR(valore))).findAny().orElse(null);
-                                        if (c0 != null) {
-                                            valore1 = c0.getNome();
+                                switch (campo) {
+                                    case "sedeindirizzo" ->
+                                        ex1.setSEDELEGALEINDIRIZZO(valore.toUpperCase());
+                                    case "sedecap" ->
+                                        ex1.setSEDELEGALECAP(valore.toUpperCase());
+                                    case "sedecomune" -> {
+                                        if (!valore.equals("")) {
+                                            Comuni_rc c0 = comuni_rc.stream().filter(c1 -> (c1.getId() == parseIntR(valore))).findAny().orElse(null);
+                                            if (c0 != null) {
+                                                valore1 = c0.getNome();
+                                            }
                                         }
+                                        ex1.setSEDELEGALECOMUNE(valore1.toUpperCase());
                                     }
-                                    ex1.setSEDELEGALECOMUNE(valore1.toUpperCase());
-                                }
-                                case "sedeprov" -> {
-                                    if (!valore.equals("")) {
-                                        Comuni_rc c0 = comuni_rc.stream().filter(c1 -> c1.getCodiceprovincia().equals(valore)).findAny().orElse(null);
-                                        if (c0 != null) {
-                                            valore1 = c0.getProvincia();
+                                    case "sedeprov" -> {
+                                        if (!valore.equals("")) {
+                                            Comuni_rc c0 = comuni_rc.stream().filter(c1 -> c1.getCodiceprovincia().equals(valore)).findAny().orElse(null);
+                                            if (c0 != null) {
+                                                valore1 = c0.getProvincia();
+                                            }
                                         }
+                                        ex1.setSEDELEGALEPROVINCIA(valore1.toUpperCase());
                                     }
-                                    ex1.setSEDELEGALEPROVINCIA(valore1.toUpperCase());
-                                }
-                                case "sederegione" -> {
-                                    if (!valore.equals("")) {
-                                        Comuni_rc c0 = comuni_rc.stream().filter(c1 -> c1.getCodiceregione().equals(valore)).findAny().orElse(null);
-                                        if (c0 != null) {
-                                            valore1 = c0.getRegione();
+                                    case "sederegione" -> {
+                                        if (!valore.equals("")) {
+                                            Comuni_rc c0 = comuni_rc.stream().filter(c1 -> c1.getCodiceregione().equals(valore)).findAny().orElse(null);
+                                            if (c0 != null) {
+                                                valore1 = c0.getRegione();
+                                            }
                                         }
+                                        ex1.setSEDELEGALEREGIONE(valore1.toUpperCase());
                                     }
-                                    ex1.setSEDELEGALEREGIONE(valore1.toUpperCase());
+                                    case "email" ->
+                                        ex1.setEMAIL(valore.toUpperCase());
+                                    case "cell" ->
+                                        ex1.setTELEFONO(valore.toUpperCase());
+                                    default -> {
+                                    }
                                 }
-                                case "email" ->
-                                    ex1.setEMAIL(valore.toUpperCase());
-                                case "cell" ->
-                                    ex1.setTELEFONO(valore.toUpperCase());
-                                default -> {
-                                }
+
                             }
-
                         }
                     }
 
@@ -396,53 +408,56 @@ public class Db_Gest {
 
                     ex1.setNDOCENTI(getMapValue(allegato_a, "numdocenti"));
 
-                    String sql3 = "select * from allegato_b where username = '" + USERNAME + "' ORDER BY id";
+                    String sql3 = "select * from allegato_b where username = ? ORDER BY id";
 
-                    try (PreparedStatement ps3 = this.c.prepareStatement(sql3); ResultSet rs3 = ps3.executeQuery()) {
-                        while (rs3.next()) {
+                    try (PreparedStatement ps3 = this.c.prepareStatement(sql3)) {
+                        ps3.setString(1, USERNAME);
+                        try (ResultSet rs3 = ps.executeQuery()) {
+                            while (rs3.next()) {
 
-                            switch (rs3.getInt("id")) {
-                                case 1 -> {
-                                    ex1.setNOMEDOCENTE1(rs3.getString("nome").toUpperCase());
-                                    ex1.setCOGNOMEDOCENTE1(rs3.getString("cognome").toUpperCase());
-                                    ex1.setCFDOCENTE1(rs3.getString("cf").toUpperCase());
-                                    ex1.setFASCIAPROPOSTADOCENTE1(rs3.getString("fascia").toUpperCase());
-                                }
-                                case 2 -> {
-                                    ex1.setNOMEDOCENTE2(rs3.getString("nome").toUpperCase());
-                                    ex1.setCOGNOMEDOCENTE2(rs3.getString("cognome").toUpperCase());
-                                    ex1.setCFDOCENTE2(rs3.getString("cf").toUpperCase());
-                                    ex1.setFASCIAPROPOSTADOCENTE2(rs3.getString("fascia").toUpperCase());
-                                }
-                                case 3 -> {
-                                    ex1.setNOMEDOCENTE3(rs3.getString("nome").toUpperCase());
-                                    ex1.setCOGNOMEDOCENTE3(rs3.getString("cognome").toUpperCase());
-                                    ex1.setCFDOCENTE3(rs3.getString("cf").toUpperCase());
-                                    ex1.setFASCIAPROPOSTADOCENTE3(rs3.getString("fascia").toUpperCase());
-                                }
-                                case 4 -> {
-                                    ex1.setNOMEDOCENTE4(rs3.getString("nome").toUpperCase());
-                                    ex1.setCOGNOMEDOCENTE4(rs3.getString("cognome").toUpperCase());
-                                    ex1.setCFDOCENTE4(rs3.getString("cf").toUpperCase());
-                                    ex1.setFASCIAPROPOSTADOCENTE4(rs3.getString("fascia").toUpperCase());
-                                }
-                                case 5 -> {
-                                    ex1.setNOMEDOCENTE5(rs3.getString("nome").toUpperCase());
-                                    ex1.setCOGNOMEDOCENTE5(rs3.getString("cognome").toUpperCase());
-                                    ex1.setCFDOCENTE5(rs3.getString("cf").toUpperCase());
-                                    ex1.setFASCIAPROPOSTADOCENTE5(rs3.getString("fascia").toUpperCase());
-                                }
-                                default -> {
+                                switch (rs3.getInt("id")) {
+                                    case 1 -> {
+                                        ex1.setNOMEDOCENTE1(rs3.getString("nome").toUpperCase());
+                                        ex1.setCOGNOMEDOCENTE1(rs3.getString("cognome").toUpperCase());
+                                        ex1.setCFDOCENTE1(rs3.getString("cf").toUpperCase());
+                                        ex1.setFASCIAPROPOSTADOCENTE1(rs3.getString("fascia").toUpperCase());
+                                    }
+                                    case 2 -> {
+                                        ex1.setNOMEDOCENTE2(rs3.getString("nome").toUpperCase());
+                                        ex1.setCOGNOMEDOCENTE2(rs3.getString("cognome").toUpperCase());
+                                        ex1.setCFDOCENTE2(rs3.getString("cf").toUpperCase());
+                                        ex1.setFASCIAPROPOSTADOCENTE2(rs3.getString("fascia").toUpperCase());
+                                    }
+                                    case 3 -> {
+                                        ex1.setNOMEDOCENTE3(rs3.getString("nome").toUpperCase());
+                                        ex1.setCOGNOMEDOCENTE3(rs3.getString("cognome").toUpperCase());
+                                        ex1.setCFDOCENTE3(rs3.getString("cf").toUpperCase());
+                                        ex1.setFASCIAPROPOSTADOCENTE3(rs3.getString("fascia").toUpperCase());
+                                    }
+                                    case 4 -> {
+                                        ex1.setNOMEDOCENTE4(rs3.getString("nome").toUpperCase());
+                                        ex1.setCOGNOMEDOCENTE4(rs3.getString("cognome").toUpperCase());
+                                        ex1.setCFDOCENTE4(rs3.getString("cf").toUpperCase());
+                                        ex1.setFASCIAPROPOSTADOCENTE4(rs3.getString("fascia").toUpperCase());
+                                    }
+                                    case 5 -> {
+                                        ex1.setNOMEDOCENTE5(rs3.getString("nome").toUpperCase());
+                                        ex1.setCOGNOMEDOCENTE5(rs3.getString("cognome").toUpperCase());
+                                        ex1.setCFDOCENTE5(rs3.getString("cf").toUpperCase());
+                                        ex1.setFASCIAPROPOSTADOCENTE5(rs3.getString("fascia").toUpperCase());
+                                    }
+                                    default -> {
+                                    }
                                 }
                             }
-                        }
 
+                        }
                     }
                     out.add(ex1);
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -453,8 +468,8 @@ public class Db_Gest {
             if (valore != null) {
                 return valore.toUpperCase().trim();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return "";
 
@@ -470,7 +485,7 @@ public class Db_Gest {
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -517,15 +532,15 @@ public class Db_Gest {
                                     valore1 = it1.getDescrizione();
                                 }
                                 map.replace(ind, valore1);
-                            } catch (Exception e) {
-                                e.printStackTrace();
+                            } catch (Exception ex) {
+                                log.severe(estraiEccezione(ex));
                             }
                         });
                     }
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return map;
     }
@@ -552,12 +567,12 @@ public class Db_Gest {
                             ps1.setString(3, data);
                             ps1.executeUpdate();
                         }
-                    } catch (Exception e1) {
-                        e1.printStackTrace();
+                    } catch (Exception ex) {
+                        log.severe(estraiEccezione(ex));
                     }
                     return true;
                 } else {
-                    e.printStackTrace();
+                    log.severe(estraiEccezione(e));
                 }
             }
         }
@@ -569,19 +584,22 @@ public class Db_Gest {
     public List<Utenti> list_Allievi_noAccento(int idpr) {
         List<Utenti> out = new ArrayList<>();
         try {
-            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE id_statopartecipazione IN ('15','18') AND idprogetti_formativi = " + idpr;
-            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                while (rs.next()) {
-                    Utenti u = new Utenti(rs.getInt("idallievi"),
-                            stripAccents(rs.getString("cognome").toUpperCase()).trim(),
-                            stripAccents(rs.getString("nome").toUpperCase()).trim(),
-                            rs.getString("codicefiscale").toUpperCase(), "ALLIEVO",
-                            rs.getString("email").toLowerCase(),rs.getString("gruppo_faseB"));
-                    out.add(u);
+            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE id_statopartecipazione IN ('15','18') AND idprogetti_formativi = ?";
+            try (PreparedStatement ps = this.c.prepareStatement(sql)) {
+                ps.setInt(1, idpr);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Utenti u = new Utenti(rs.getInt("idallievi"),
+                                stripAccents(rs.getString("cognome").toUpperCase()).trim(),
+                                stripAccents(rs.getString("nome").toUpperCase()).trim(),
+                                rs.getString("codicefiscale").toUpperCase(), "ALLIEVO",
+                                rs.getString("email").toLowerCase(), rs.getString("gruppo_faseB"));
+                        out.add(u);
+                    }
                 }
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -589,19 +607,23 @@ public class Db_Gest {
     public List<Utenti> list_Allievi_noAccento(int idpr, int gruppo) {
         List<Utenti> out = new ArrayList<>();
         try {
-            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE id_statopartecipazione IN ('15','18') AND idprogetti_formativi = " + idpr + " AND gruppo_faseB = " + gruppo;
-            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                while (rs.next()) {
-                    Utenti u = new Utenti(rs.getInt("idallievi"),
-                            stripAccents(rs.getString("cognome").toUpperCase()).trim(),
-                            stripAccents(rs.getString("nome").toUpperCase()).trim(),
-                            rs.getString("codicefiscale").toUpperCase(), "ALLIEVO",
-                            rs.getString("email").toLowerCase(),rs.getString("gruppo_faseB"));
-                    out.add(u);
+            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE id_statopartecipazione IN ('15','18') AND idprogetti_formativi = ? AND gruppo_faseB = ?";
+            try (PreparedStatement ps = this.c.prepareStatement(sql)) {
+                ps.setInt(1, idpr);
+                ps.setInt(2, gruppo);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Utenti u = new Utenti(rs.getInt("idallievi"),
+                                stripAccents(rs.getString("cognome").toUpperCase()).trim(),
+                                stripAccents(rs.getString("nome").toUpperCase()).trim(),
+                                rs.getString("codicefiscale").toUpperCase(), "ALLIEVO",
+                                rs.getString("email").toLowerCase(), rs.getString("gruppo_faseB"));
+                        out.add(u);
+                    }
                 }
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -609,58 +631,69 @@ public class Db_Gest {
     public List<Utenti> list_Allievi(int idpr) {
         List<Utenti> out = new ArrayList<>();
         try {
-            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE id_statopartecipazione IN ('15','18') AND idprogetti_formativi = " + idpr;
-            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                while (rs.next()) {
-                    Utenti u = new Utenti(rs.getInt("idallievi"),
-                            (rs.getString("cognome").toUpperCase().trim()),
-                            (rs.getString("nome").toUpperCase().trim()),
-                            rs.getString("codicefiscale").toUpperCase(), "ALLIEVO",
-                            rs.getString("email").toLowerCase(),rs.getString("gruppo_faseB"));
-                    out.add(u);
+            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE id_statopartecipazione IN ('15','18') AND idprogetti_formativi = ?";
+            try (PreparedStatement ps = this.c.prepareStatement(sql)) {
+                ps.setInt(1, idpr);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Utenti u = new Utenti(rs.getInt("idallievi"),
+                                (rs.getString("cognome").toUpperCase().trim()),
+                                (rs.getString("nome").toUpperCase().trim()),
+                                rs.getString("codicefiscale").toUpperCase(), "ALLIEVO",
+                                rs.getString("email").toLowerCase(), rs.getString("gruppo_faseB"));
+                        out.add(u);
+                    }
                 }
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
+
     public List<Utenti> list_Allievi_ALL(int idpr) {
         List<Utenti> out = new ArrayList<>();
         try {
-            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE idprogetti_formativi = " + idpr+" ORDER BY cognome";
-            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                while (rs.next()) {
-                    Utenti u = new Utenti(rs.getInt("idallievi"),
-                            (rs.getString("cognome").toUpperCase().trim()),
-                            (rs.getString("nome").toUpperCase().trim()),
-                            rs.getString("codicefiscale").toUpperCase(), "ALLIEVO",
-                            rs.getString("email").toLowerCase(),
-                    rs.getString("gruppo_faseB"));
-                    out.add(u);
+            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE idprogetti_formativi = ? ORDER BY cognome";
+            try (PreparedStatement ps = this.c.prepareStatement(sql)) {
+                ps.setInt(1, idpr);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Utenti u = new Utenti(rs.getInt("idallievi"),
+                                (rs.getString("cognome").toUpperCase().trim()),
+                                (rs.getString("nome").toUpperCase().trim()),
+                                rs.getString("codicefiscale").toUpperCase(), "ALLIEVO",
+                                rs.getString("email").toLowerCase(),
+                                rs.getString("gruppo_faseB"));
+                        out.add(u);
+                    }
                 }
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
+
     public List<Utenti> list_Allievi_OK(int idpr) {
         List<Utenti> out = new ArrayList<>();
         try {
-            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE idprogetti_formativi = " + idpr+" AND importo > 0 ORDER BY cognome";
-            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                while (rs.next()) {
-                    Utenti u = new Utenti(rs.getInt("idallievi"),
-                            (rs.getString("cognome").toUpperCase().trim()),
-                            (rs.getString("nome").toUpperCase().trim()),
-                            rs.getString("codicefiscale").toUpperCase(), "ALLIEVO",
-                            rs.getString("email").toLowerCase(),rs.getString("gruppo_faseB"));
-                    out.add(u);
+            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE idprogetti_formativi = ? AND importo > 0 ORDER BY cognome";
+            try (PreparedStatement ps = this.c.prepareStatement(sql)) {
+                ps.setInt(1, idpr);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Utenti u = new Utenti(rs.getInt("idallievi"),
+                                (rs.getString("cognome").toUpperCase().trim()),
+                                (rs.getString("nome").toUpperCase().trim()),
+                                rs.getString("codicefiscale").toUpperCase(), "ALLIEVO",
+                                rs.getString("email").toLowerCase(), rs.getString("gruppo_faseB"));
+                        out.add(u);
+                    }
                 }
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -669,19 +702,22 @@ public class Db_Gest {
         List<Utenti> out = new ArrayList<>();
         try {
             String sql = "SELECT iddocenti,nome,cognome,codicefiscale,email FROM docenti WHERE iddocenti IN "
-                    + "(SELECT iddocenti FROM progetti_docenti WHERE idprogetti_formativi = " + idpr + ")";
-            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                while (rs.next()) {
-                    Utenti u = new Utenti(rs.getInt("iddocenti"),
-                            (rs.getString("cognome").toUpperCase().trim()),
-                            (rs.getString("nome").toUpperCase().trim()),
-                            rs.getString("codicefiscale").toUpperCase(), "DOCENTE",
-                            rs.getString("email").toLowerCase(),"1");
-                    out.add(u);
+                    + "(SELECT iddocenti FROM progetti_docenti WHERE idprogetti_formativi = ?)";
+            try (PreparedStatement ps = this.c.prepareStatement(sql)) {
+                ps.setInt(1, idpr);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Utenti u = new Utenti(rs.getInt("iddocenti"),
+                                (rs.getString("cognome").toUpperCase().trim()),
+                                (rs.getString("nome").toUpperCase().trim()),
+                                rs.getString("codicefiscale").toUpperCase(), "DOCENTE",
+                                rs.getString("email").toLowerCase(), "1");
+                        out.add(u);
+                    }
                 }
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -690,19 +726,22 @@ public class Db_Gest {
         List<Utenti> out = new ArrayList<>();
         try {
             String sql = "SELECT iddocenti,nome,cognome,codicefiscale,email FROM docenti WHERE iddocenti IN "
-                    + "(SELECT iddocenti FROM progetti_docenti WHERE idprogetti_formativi = " + idpr + ")";
-            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                while (rs.next()) {
-                    Utenti u = new Utenti(rs.getInt("iddocenti"),
-                            stripAccents(rs.getString("cognome").toUpperCase().trim()),
-                            stripAccents(rs.getString("nome").toUpperCase().trim()),
-                            rs.getString("codicefiscale").toUpperCase(), "DOCENTE",
-                            rs.getString("email").toLowerCase(),"1");
-                    out.add(u);
+                    + "(SELECT iddocenti FROM progetti_docenti WHERE idprogetti_formativi = ?)";
+            try (PreparedStatement ps = this.c.prepareStatement(sql)) {
+                ps.setInt(1, idpr);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Utenti u = new Utenti(rs.getInt("iddocenti"),
+                                stripAccents(rs.getString("cognome").toUpperCase().trim()),
+                                stripAccents(rs.getString("nome").toUpperCase().trim()),
+                                rs.getString("codicefiscale").toUpperCase(), "DOCENTE",
+                                rs.getString("email").toLowerCase(), "1");
+                        out.add(u);
+                    }
                 }
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -710,22 +749,28 @@ public class Db_Gest {
     public String[] sa_cip(int idpr) {
         try {
 
-            String sql0 = "SELECT cip,idsoggetti_attuatori FROM progetti_formativi WHERE idprogetti_formativi = " + idpr;
-            try (Statement st0 = this.c.createStatement(); ResultSet rs0 = st0.executeQuery(sql0)) {
-                if (rs0.next()) {
-                    String cip = rs0.getString(1);
-                    String sql1 = "SELECT ragionesociale FROM soggetti_attuatori WHERE idsoggetti_attuatori = " + rs0.getInt(2);
-                    try (Statement st1 = this.c.createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
-                        if (rs1.next()) {
-                            String[] out = {rs1.getString(1).trim().toUpperCase(), cip, rs0.getString(2)};
-                            return out;
+            String sql0 = "SELECT cip,idsoggetti_attuatori FROM progetti_formativi WHERE idprogetti_formativi = ?";
+            try (PreparedStatement ps = this.c.prepareStatement(sql0)) {
+                ps.setInt(1, idpr);
+                try (ResultSet rs0 = ps.executeQuery()) {
+                    if (rs0.next()) {
+                        String cip = rs0.getString(1);
+                        String sql1 = "SELECT ragionesociale FROM soggetti_attuatori WHERE idsoggetti_attuatori = ?";
+                        try (PreparedStatement ps1 = this.c.prepareStatement(sql1)) {
+                            ps1.setInt(1, rs0.getInt(2));
+                            try (ResultSet rs1 = ps1.executeQuery()) {
+                                if (rs1.next()) {
+                                    String[] out = {rs1.getString(1).trim().toUpperCase(), cip, rs0.getString(2)};
+                                    return out;
+                                }
+                            }
                         }
-                    }
 
+                    }
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.severe(estraiEccezione(ex));
         }
 
         return null;
@@ -741,7 +786,7 @@ public class Db_Gest {
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -749,10 +794,13 @@ public class Db_Gest {
     public int get_allievi_accreditati(int idpr) {
         int out = 0;
         try {
-            String sql = "SELECT COUNT(a.idallievi) FROM allievi a WHERE a.id_statopartecipazione IN ('13','14','15','18','19') AND a.idprogetti_formativi=" + idpr;
-            try (Statement st1 = this.c.createStatement(); ResultSet rs = st1.executeQuery(sql)) {
-                if (rs.next()) {
-                    out = rs.getInt(1);
+            String sql = "SELECT COUNT(a.idallievi) FROM allievi a WHERE a.id_statopartecipazione IN ('13','14','15','18','19') AND a.idprogetti_formativi = ?";
+            try (PreparedStatement ps = this.c.prepareStatement(sql)) {
+                ps.setInt(1, idpr);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        out = rs.getInt(1);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -819,7 +867,6 @@ public class Db_Gest {
             }
 
         } catch (Exception ex) {
-            ex.printStackTrace();
             insertTracking("ERROR SYSTEM", estraiEccezione(ex));
         }
         return false;
@@ -841,141 +888,144 @@ public class Db_Gest {
         }
         return null;
     }
-    
-    
+
     public List<Registro_completo> registro_modello6(int idpr) {
         List<Registro_completo> registro = new ArrayList<>();
         try {
             //FAD
-            String sql = "SELECT * FROM registro_completo WHERE idprogetti_formativi = " + idpr + " GROUP BY ruolo,idutente,data,gruppofaseb ORDER BY data,gruppofaseb";
-            try (Statement st = this.c.createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY); ResultSet rs = st.executeQuery(sql)) {
-                while (rs.next()) {
+            String sql = "SELECT * FROM registro_completo WHERE idprogetti_formativi = ? GROUP BY ruolo,idutente,data,gruppofaseb ORDER BY data,gruppofaseb";
+            try (PreparedStatement ps = this.c.prepareStatement(sql, TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY)) {
+                ps.setInt(1, idpr);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
 
-                    long orerend = rs.getLong(21);
-                    Registro_completo rc = new Registro_completo(
-                            rs.getInt(1),
-                            rs.getInt(2),
-                            rs.getInt(3),
-                            rs.getString(4),
-                            new DateTime(rs.getDate(5).getTime()),
-                            rs.getString(6),
-                            rs.getInt(7),
-                            rs.getString(8),
-                            rs.getString(9),
-                            rs.getLong(10),
-                            rs.getString(11),
-                            rs.getString(12),
-                            rs.getInt(13),
-                            rs.getString(14),
-                            rs.getString(15),
-                            rs.getString(16),
-                            rs.getString(17),
-                            rs.getString(18),
-                            rs.getString(19),
-                            rs.getLong(20),
-                            orerend,
-                            rs.getInt(23));
-                    registro.add(rc);
+                        long orerend = rs.getLong(21);
+                        Registro_completo rc = new Registro_completo(
+                                rs.getInt(1),
+                                rs.getInt(2),
+                                rs.getInt(3),
+                                rs.getString(4),
+                                new DateTime(rs.getDate(5).getTime()),
+                                rs.getString(6),
+                                rs.getInt(7),
+                                rs.getString(8),
+                                rs.getString(9),
+                                rs.getLong(10),
+                                rs.getString(11),
+                                rs.getString(12),
+                                rs.getInt(13),
+                                rs.getString(14),
+                                rs.getString(15),
+                                rs.getString(16),
+                                rs.getString(17),
+                                rs.getString(18),
+                                rs.getString(19),
+                                rs.getLong(20),
+                                orerend,
+                                rs.getInt(23));
+                        registro.add(rc);
+                    }
                 }
             }
 
             //PRESENZA
             String sql1 = "SELECT * FROM presenzelezioni p, progetti_formativi f, lezioni_modelli lm, lezione_calendario lc , docenti d "
                     + " WHERE d.iddocenti=p.iddocente AND lc.id_lezionecalendario=lm.id_lezionecalendario AND lm.id_lezionimodelli=p.idlezioneriferimento AND "
-                    + " p.idprogetto=f.idprogetti_formativi AND p.idprogetto = " + idpr + " ORDER BY p.datalezione,p.orainizio;";            
-            try (Statement st1 = this.c.createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY); ResultSet rs1 = st1.executeQuery(sql1)) {
-                while (rs1.next()) {
-                    String sql2 = "SELECT * FROM presenzelezioniallievi a, allievi l WHERE a.idallievi=l.idallievi AND a.idpresenzelezioni = "
-                            + rs1.getInt("p.idpresenzelezioni")
-                            + " AND a.convalidata = 1 GROUP BY l.idallievi";
+                    + " p.idprogetto=f.idprogetti_formativi AND p.idprogetto = ? ORDER BY p.datalezione,p.orainizio";
+            try (PreparedStatement ps1 = this.c.prepareStatement(sql1, TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY)) {
+                ps1.setInt(1, idpr);
+                try (ResultSet rs1 = ps1.executeQuery()) {
+                    while (rs1.next()) {
+                        String sql2 = "SELECT * FROM presenzelezioniallievi a, allievi l WHERE a.idallievi=l.idallievi AND a.idpresenzelezioni = ? AND a.convalidata = 1 GROUP BY l.idallievi";
+                        try (PreparedStatement ps2 = this.c.prepareStatement(sql2, TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY)) {
+                            ps2.setInt(1, rs1.getInt("p.idpresenzelezioni"));
+                            try (ResultSet rs2 = ps2.executeQuery()) {
+                                int numpartecipanti = 0;
+                                while (rs2.next()) {
+                                    numpartecipanti++;
+                                }
+                                rs2.beforeFirst();
 
-                    try (Statement st2 = this.c.createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY); ResultSet rs2 = st2.executeQuery(sql2)) {
+                                long durata = calcolaintervallomillis(rs1.getString("p.orainizio"), rs1.getString("p.orafine"));
 
-                        int numpartecipanti = 0;
-                        while (rs2.next()) {
-                            numpartecipanti++;
-                        }
-                        rs2.beforeFirst();
+                                String fase = rs1.getString("lc.codice_ud").startsWith("A") ? "A" : "B";
 
-                        long durata = calcolaintervallomillis(rs1.getString("p.orainizio"), rs1.getString("p.orafine"));
+                                int gruppofaseb = fase.equals("A") ? 0 : rs1.getInt("lm.gruppo_faseB");
 
-                        String fase = rs1.getString("lc.codice_ud").startsWith("A") ? "A" : "B";
+                                Registro_completo docente = new Registro_completo(0,
+                                        idpr,
+                                        rs1.getInt("f.idsoggetti_attuatori"),
+                                        rs1.getString("f.cip"),
+                                        new DateTime(rs1.getDate("p.datalezione").getTime()),
+                                        rs1.getString("f.cip") + "_" + fase + "_" + rs1.getString("lc.codice_ud") + "_" + StringUtils.replace(rs1.getString("p.datalezione"), "-", ""),
+                                        numpartecipanti,
+                                        rs1.getString("p.orainizio"),
+                                        rs1.getString("p.orafine"),
+                                        durata,
+                                        rs1.getString("lc.codice_ud"),
+                                        fase,
+                                        gruppofaseb,
+                                        "DOCENTE",
+                                        rs1.getString("d.cognome"),
+                                        rs1.getString("d.nome"),
+                                        rs1.getString("d.email"),
+                                        rs1.getString("p.orainizio"),
+                                        rs1.getString("p.orafine"),
+                                        durata,
+                                        durata,
+                                        rs1.getInt("d.iddocenti"));
+                                registro.add(docente);
 
-                        int gruppofaseb = fase.equals("A") ? 0 : rs1.getInt("lm.gruppo_faseB");
+                                while (rs2.next()) {
 
-                        Registro_completo docente = new Registro_completo(0,
-                                idpr,
-                                rs1.getInt("f.idsoggetti_attuatori"),
-                                rs1.getString("f.cip"),
-                                new DateTime(rs1.getDate("p.datalezione").getTime()),
-                                rs1.getString("f.cip") + "_" + fase + "_" + rs1.getString("lc.codice_ud") + "_" + StringUtils.replace(rs1.getString("p.datalezione"), "-", ""),
-                                numpartecipanti,
-                                rs1.getString("p.orainizio"),
-                                rs1.getString("p.orafine"),
-                                durata,
-                                rs1.getString("lc.codice_ud"),
-                                fase,
-                                gruppofaseb,
-                                "DOCENTE",
-                                rs1.getString("d.cognome"),
-                                rs1.getString("d.nome"),
-                                rs1.getString("d.email"),
-                                rs1.getString("p.orainizio"),
-                                rs1.getString("p.orafine"),
-                                durata,
-                                durata,
-                                rs1.getInt("d.iddocenti"));
-                        registro.add(docente);
-
-                        while (rs2.next()) {
-
-                            Registro_completo rc = new Registro_completo(0,
-                                    idpr,
-                                    rs1.getInt("f.idsoggetti_attuatori"),
-                                    rs1.getString("f.cip"),
-                                    new DateTime(rs1.getDate("p.datalezione").getTime()),
-                                    rs1.getString("f.cip") + "_" + fase + "_" + rs1.getString("lc.codice_ud") + "_" + StringUtils.replace(rs1.getString("p.datalezione"), "-", ""),
-                                    numpartecipanti,
-                                    rs1.getString("p.orainizio"),
-                                    rs1.getString("p.orafine"),
-                                    calcolaintervallomillis(rs1.getString("p.orainizio"), rs1.getString("p.orafine")),
-                                    rs1.getString("lc.codice_ud"),
-                                    fase,
-                                    gruppofaseb,
-                                    "ALLIEVO",
-                                    rs2.getString("l.cognome"),
-                                    rs2.getString("l.nome"),
-                                    rs2.getString("l.email"),
-                                    rs2.getString("a.orainizio"),
-                                    rs2.getString("a.orafine"),
-                                    rs2.getLong("a.durata"),
-                                    rs2.getLong("a.durataconvalidata"),
-                                    rs2.getInt("l.idallievi"));
-                            registro.add(rc);
+                                    Registro_completo rc = new Registro_completo(0,
+                                            idpr,
+                                            rs1.getInt("f.idsoggetti_attuatori"),
+                                            rs1.getString("f.cip"),
+                                            new DateTime(rs1.getDate("p.datalezione").getTime()),
+                                            rs1.getString("f.cip") + "_" + fase + "_" + rs1.getString("lc.codice_ud") + "_" + StringUtils.replace(rs1.getString("p.datalezione"), "-", ""),
+                                            numpartecipanti,
+                                            rs1.getString("p.orainizio"),
+                                            rs1.getString("p.orafine"),
+                                            calcolaintervallomillis(rs1.getString("p.orainizio"), rs1.getString("p.orafine")),
+                                            rs1.getString("lc.codice_ud"),
+                                            fase,
+                                            gruppofaseb,
+                                            "ALLIEVO",
+                                            rs2.getString("l.cognome"),
+                                            rs2.getString("l.nome"),
+                                            rs2.getString("l.email"),
+                                            rs2.getString("a.orainizio"),
+                                            rs2.getString("a.orafine"),
+                                            rs2.getLong("a.durata"),
+                                            rs2.getLong("a.durataconvalidata"),
+                                            rs2.getInt("l.idallievi"));
+                                    registro.add(rc);
+                                }
+                            }
                         }
                     }
                 }
             }
-            registro.sort((d1,d2) -> d1.getData().compareTo(d2.getData()));
+            registro.sort((d1, d2) -> d1.getData().compareTo(d2.getData()));
         } catch (Exception ex) {
             log.severe(estraiEccezione(ex));
         }
         return registro;
     }
 
-    
     private static long calcolaintervallomillis(String orastart, String oraend) {
         try {
             DateTime st_data1 = new DateTime(2000, 1, 1, Integer.parseInt(orastart.split(":")[0]), Integer.parseInt(orastart.split(":")[1]));
             DateTime st_data2 = new DateTime(2000, 1, 1, Integer.parseInt(oraend.split(":")[0]), Integer.parseInt(oraend.split(":")[1]));
             Period p = new Period(st_data1, st_data2, PeriodType.millis());
             return p.getValue(0);
-        } catch (Exception e) {
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
             return 0L;
         }
     }
-    
-    
+
     public List<Items> calendario(int idpr) {
 
         List<Items> out = new ArrayList<>();
@@ -986,26 +1036,25 @@ public class Db_Gest {
                     + "FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, "
                     + "unita_didattiche ud, progetti_formativi p  "
                     + "WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario "
-                    + "AND ud.codice=lc.codice_ud "
-                    + "AND p.idprogetti_formativi=mp.id_progettoformativo "
-                    //+ "AND (lm.gruppo_faseB = 0 OR lm.gruppo_faseB=f.numerocorso) "
-                    + "AND mp.id_progettoformativo=" + idpr
-                    + " GROUP BY lm.gruppo_faseB,lm.giorno,lm.id_lezionecalendario "
-                    + " ORDER BY lm.gruppo_faseB,lm.giorno";
-            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                while (rs.next()) {
-                    String fase = rs.getString("ud.fase").endsWith("A") ? "A" : "B";
-                    String gruppo = fase.equals("A") ? "1" : rs.getString("lm.gruppo_faseB");
-                    Items itm = new Items(fase, 
-                            formatStringtoStringDate(rs.getString("lm.giorno"),patternSql,patternITA,false), 
-                            rs.getString("lm.orario_start"),
-                            rs.getString("lm.orario_end"), 
-                            gruppo);
-                    temp.add(itm);
+                    + "AND ud.codice=lc.codice_ud AND p.idprogetti_formativi=mp.id_progettoformativo AND mp.id_progettoformativo = ? "
+                    + "GROUP BY lm.gruppo_faseB,lm.giorno,lm.id_lezionecalendario ORDER BY lm.gruppo_faseB,lm.giorno";
+            try (PreparedStatement ps = this.c.prepareStatement(sql, TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY)) {
+                ps.setInt(1, idpr);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String fase = rs.getString("ud.fase").endsWith("A") ? "A" : "B";
+                        String gruppo = fase.equals("A") ? "1" : rs.getString("lm.gruppo_faseB");
+                        Items itm = new Items(fase,
+                                formatStringtoStringDate(rs.getString("lm.giorno"), patternSql, patternITA, false),
+                                rs.getString("lm.orario_start"),
+                                rs.getString("lm.orario_end"),
+                                gruppo);
+                        temp.add(itm);
+                    }
                 }
             }
-        } catch (Exception ex1) {
-            ex1.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
 
         for (int i = 0; i < temp.size(); i++) {

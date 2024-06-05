@@ -148,7 +148,6 @@ public class Constant {
 //    public static final String tipologia_costo = "8";
 //    public static final String tipologia_giustificativo = "16";
 //    public static final String cf_soggetto_DD = "97538720588";
-
     public static Logger createLog(String nameapp, String logpath) {
         try {
             File dir1 = new File(logpath);
@@ -456,7 +455,7 @@ public class Constant {
     }
 
     public static final long MAX = 18000000;
-    
+
     public static long convertHours(String ore) {
         try {
             double d1 = Double.parseDouble(ore);
@@ -646,19 +645,44 @@ public class Constant {
         }
         return null;
     }
+    public static final String BASE_PATH1 = "/mnt/mcn/yisu_toscana";
+    public static final String BASE_PATH2 = "C:\\mnt\\mcn\\yisu_toscana";
+
+    public static File createFile(String pathfile) {
+        try {
+            File dest = new File(pathfile);
+            if (dest.getCanonicalPath().startsWith(BASE_PATH1) || dest.getCanonicalPath().startsWith(BASE_PATH2)) {
+                return dest;
+            }
+        } catch (Exception e) {
+            System.err.println("ERRORE: " + estraiEccezione(e));
+        }
+        return null;
+    }
 
     public static boolean checkPDF(File pdffile) {
-        if (pdffile.exists()) {
-            try {
-                int pag;
-                try (PDDocument pdf = loadPDF(pdffile)) {
-                    pag = pdf.getNumberOfPages();
+        try {
+            if (pdffile.getCanonicalPath().startsWith(BASE_PATH1) || pdffile.getCanonicalPath().startsWith(BASE_PATH2)) {
+                if (pdffile.exists()) {
+                    try {
+                        int pag;
+                        try (PDDocument pdf = loadPDF(pdffile)) {
+                            pag = pdf.getNumberOfPages();
+                        }
+                        return pag > 0;
+                    } catch (Exception e) {
+                        System.err.println(pdffile.getCanonicalPath() + " ERRORE: " + estraiEccezione(e));
+                    }
+                } else {
+                    System.err.println(pdffile.getCanonicalPath() + " ERRORE: NOT FOUND");
                 }
-                return pag > 0;
-            } catch (Exception e) {
-                System.err.println(pdffile.getName() + " ERRORE: " + estraiEccezione(e));
+            } else {
+                System.err.println(pdffile.getCanonicalPath() + " ERRORE: PATH TRASVERSAL");
             }
+        } catch (Exception e) {
+            System.err.println("ERRORE: " + estraiEccezione(e));
         }
+
         return false;
     }
 
@@ -734,7 +758,7 @@ public class Constant {
         }
         return 0.0;
     }
-    
+
     public static String roundFloatAndFormat(float f, boolean converttoHours) {
         try {
 
@@ -805,22 +829,27 @@ public class Constant {
 
     public static String formatStatoDomanda(String statoDomanda) {
         try {
-
             switch (statoDomanda) {
-                case "S":
+                case "S" -> {
                     return "NON PROCESSATA";
-                case "R":
+                }
+                case "R" -> {
                     return "RIGETTATA";
-                case "A":
+                }
+                case "A" -> {
                     return "APPROVATA";
-                case "A1":
+                }
+                case "A1" -> {
                     return "CONVENZIONE SA";
-                case "A2":
+                }
+                case "A2" -> {
                     return "SA ATTIVO";
-                case "A3":
+                }
+                case "A3" -> {
                     return "IN ATTESA FIRMA ENM";
-                default:
-                    break;
+                }
+                default -> {
+                }
             }
         } catch (Exception e) {
         }
@@ -831,37 +860,42 @@ public class Constant {
         if (null == statoDocente) {
             return "";
         } else {
-            switch (statoDocente) {
-                case "A":
-                    return "ACCREDITATO";
-                case "DV":
-                    return "DA VALIDARE";
-                case "R":
-                    return "RIGETTATO";
-                default:
-                    return "";
-            }
+            return switch (statoDocente) {
+                case "A" ->
+                    "ACCREDITATO";
+                case "DV" ->
+                    "DA VALIDARE";
+                case "R" ->
+                    "RIGETTATO";
+                default ->
+                    "";
+            };
         }
     }
 
     public static String getCellValue(XSSFCell cella) {
         try {
             switch (cella.getCellType()) {
-                case STRING:
+                case STRING -> {
                     return cella.getRichStringCellValue().getString().toUpperCase().trim();
-                case NUMERIC:
+                }
+                case NUMERIC -> {
                     if (DateUtil.isCellDateFormatted(cella)) {
                         final DataFormatter df = new DataFormatter();
                         return df.formatCellValue(cella).toUpperCase().trim();
                     } else {
                         return String.valueOf(cella.getNumericCellValue()).trim();
                     }
-                case BOOLEAN:
+                }
+                case BOOLEAN -> {
                     return String.valueOf(cella.getBooleanCellValue()).toUpperCase().trim();
-                case FORMULA:
+                }
+                case FORMULA -> {
                     return (cella.getCellFormula()).toUpperCase().trim();
-                default:
+                }
+                default -> {
                     return "";
+                }
             }
         } catch (Exception e) {
         }
@@ -920,8 +954,10 @@ public class Constant {
                 for (int i = 0; i < files.size(); i++) {
                     File ing = files.get(i);
                     os.putArchiveEntry(new ZipArchiveEntry(ing.getName()));
-                    copy(new FileInputStream(ing), os);
-                    os.closeArchiveEntry();
+                    try (InputStream is = new FileInputStream(ing)) {
+                        copy(is, os);
+                        os.closeArchiveEntry();
+                    }
                 }
             }
             return targetZipFile.length() > 0;

@@ -11,6 +11,7 @@ import rc.soop.arti.Arti;
 import static rc.soop.exe.Utils.estraiEccezione;
 import static rc.soop.gestione.Create.crearegistri;
 import static rc.soop.gestione.Create.solocomplessivi;
+import rc.soop.gestione.Rendicontazione;
 import rc.soop.gestione.Toscana_gestione;
 
 /**
@@ -57,6 +58,10 @@ public class MainSelector {
                 log.warning("GENERAZIONE FILE REPORT... INIZIO");
                 try {
                     tg.report_docenti();
+                } catch (Exception e) {
+                }
+                try {
+                    tg.report_docenti_GG1();
                 } catch (Exception e) {
                 }
                 try {
@@ -157,13 +162,22 @@ public class MainSelector {
                     log.severe(estraiEccezione(e));
                 }
                 try {
-                    tg.attestati_UD();
+                    tg.attestati_UD(0);
                 } catch (Exception e) {
                     log.severe(estraiEccezione(e));
                 }
             }
             case 9 -> { //SOLO REGISTRI COMPLESSIVI
                 solocomplessivi(testing);
+            }
+            case 10 -> { //RENDICOTNAZIONE
+                try {
+                    log.info("START RENDICONTAZIONE");
+                    Rendicontazione.generaRendicontazione();
+                    log.info("FINE RENDICONTAZIONE");
+                } catch (Exception e) {
+                    log.severe(estraiEccezione(e));
+                }
             }
 
             default ->

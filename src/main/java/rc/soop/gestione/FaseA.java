@@ -61,6 +61,7 @@ import static rc.soop.gestione.Constant.calcoladurata;
 import static rc.soop.gestione.Constant.checkPDF;
 import static rc.soop.gestione.Constant.convertPDFA;
 import static rc.soop.gestione.Constant.convertTS_Italy;
+import static rc.soop.gestione.Constant.createFile;
 import static rc.soop.gestione.Constant.format;
 import static rc.soop.gestione.Constant.getIdUser;
 import static rc.soop.gestione.Constant.printbarcode;
@@ -108,7 +109,7 @@ public class FaseA {
             normal.setFont(fontnormal).setFontSize(10);
 
             //CREA PDF REPORT
-            File out0 = new File(pathtemp + now0 + "reportfaseA_" + idpr + ".pdf");
+            File out0 = createFile(pathtemp + now0 + "reportfaseA_" + idpr + ".pdf");
             PdfWriter pw0 = new PdfWriter(out0);
             PdfDocument pdfDoc = new PdfDocument(pw0);
             pdfDoc.setDefaultPageSize(PageSize.A4.rotate());
@@ -121,35 +122,37 @@ public class FaseA {
                 Table table = new Table(UnitValue.createPercentArray(8)).useAllAvailableWidth();
                 try {
                     String day = cal.getGiorno();
-                    String sql = "SELECT * FROM registro_completo WHERE idprogetti_formativi = "
-                            + idpr + " AND data = '" + day
-                            + "' AND fase='A' ORDER BY ruolo DESC,cognome ASC,nome ASC";
-                    try (Statement st = db1.getConnection().createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                        while (rs.next()) {
-                            Registro_completo rc = new Registro_completo(
-                                    rs.getInt(1),
-                                    rs.getInt(2),
-                                    rs.getInt(3),
-                                    rs.getString(4),
-                                    new DateTime(rs.getDate(5).getTime()),
-                                    rs.getString(6),
-                                    rs.getInt(7),
-                                    rs.getString(8),
-                                    rs.getString(9),
-                                    rs.getLong(10),
-                                    rs.getString(11),
-                                    rs.getString(12),
-                                    rs.getInt(13),
-                                    rs.getString(14),
-                                    rs.getString(15),
-                                    rs.getString(16),
-                                    rs.getString(17),
-                                    rs.getString(18),
-                                    rs.getString(19),
-                                    rs.getLong(20),
-                                    rs.getLong(21),
-                                    rs.getInt(23));
-                            registro.add(rc);
+                    String sql = "SELECT * FROM registro_completo WHERE idprogetti_formativi = ? AND data = ? AND fase='A' ORDER BY ruolo DESC,cognome ASC,nome ASC";
+                    try (PreparedStatement ps = db1.getConnection().prepareStatement(sql)) {
+                        ps.setInt(1, idpr);
+                        ps.setString(2, day);
+                        try (ResultSet rs = ps.executeQuery(sql)) {
+                            while (rs.next()) {
+                                Registro_completo rc = new Registro_completo(
+                                        rs.getInt(1),
+                                        rs.getInt(2),
+                                        rs.getInt(3),
+                                        rs.getString(4),
+                                        new DateTime(rs.getDate(5).getTime()),
+                                        rs.getString(6),
+                                        rs.getInt(7),
+                                        rs.getString(8),
+                                        rs.getString(9),
+                                        rs.getLong(10),
+                                        rs.getString(11),
+                                        rs.getString(12),
+                                        rs.getInt(13),
+                                        rs.getString(14),
+                                        rs.getString(15),
+                                        rs.getString(16),
+                                        rs.getString(17),
+                                        rs.getString(18),
+                                        rs.getString(19),
+                                        rs.getLong(20),
+                                        rs.getLong(21),
+                                        rs.getInt(23));
+                                registro.add(rc);
+                            }
                         }
                     }
                     
@@ -347,7 +350,7 @@ public class FaseA {
                 pw0.close();
                 
                 String qrcontent = "ID " + idpr + " REGISTRO FASE A - AGGIORNATO IL " + now;
-                File out1 = new File(StringUtils.replace(out0.getPath(), ".pdf", "_qr.pdf"));
+                File out1 = createFile(StringUtils.replace(out0.getPath(), ".pdf", "_qr.pdf"));
                 try (PdfReader p2 = new PdfReader(out0); PdfWriter p2w = new PdfWriter(out1); PdfDocument pdfDoc1 = new PdfDocument(p2, p2w)) {
                     BarcodeQRCode barcode = new BarcodeQRCode(qrcontent);
                     String add = "Questo registro è stato generato automaticamente dalla piattaforma raggiungibile al link: " + linkpiattaforma;
@@ -359,26 +362,31 @@ public class FaseA {
                     out1.deleteOnExit();
                     
                     createDir(path_destinazione);
-                    File pdf_final = new File(path_destinazione + File.separator + "Registro Fase A_" + now1 + ".pdf");
+                    File pdf_final = createFile(path_destinazione + File.separator + "Registro Fase A_" + now1 + ".pdf");
                     FileUtils.copyFile(out2, pdf_final);
                     if (checkPDF(pdf_final)) {
                         out2.deleteOnExit();
                         if (save) {
                             Db_Gest db3 = new Db_Gest(host);
-                            String sql = "SELECT iddocumenti_progetti FROM documenti_progetti WHERE idprogetto = " + idpr + " AND tipo = 29";
-                            try (Statement st = db3.getConnection().createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                                if (rs.next()) {
-                                    try (Statement st1 = db3.getConnection().createStatement()) {
-                                        String upd = "UPDATE documenti_progetti SET path = '" + pdf_final.getPath() + "' WHERE iddocumenti_progetti = " + rs.getInt(1);
-                                        st1.executeUpdate(upd);
-                                    }
-                                } else {
-                                    String ins = "INSERT INTO documenti_progetti (path,idprogetto,tipo) VALUES (?,?,?)";
-                                    try (PreparedStatement ps1 = db3.getConnection().prepareStatement(ins)) {
-                                        ps1.setString(1, pdf_final.getPath());
-                                        ps1.setInt(2, idpr);
-                                        ps1.setInt(3, 29);
-                                        ps1.execute();
+                            String sql = "SELECT iddocumenti_progetti FROM documenti_progetti WHERE idprogetto = ? AND tipo = 29";
+                            try (PreparedStatement ps = db3.getConnection().prepareStatement(sql)) {
+                                ps.setInt(1, idpr);
+                                try (ResultSet rs = ps.executeQuery(sql)) {
+                                    if (rs.next()) {
+                                        String upd = "UPDATE documenti_progetti SET path = ? WHERE iddocumenti_progetti = ?";
+                                        try (PreparedStatement ps1 = db3.getConnection().prepareStatement(upd)) {
+                                            ps1.setString(1, pdf_final.getPath());
+                                            ps1.setInt(2, rs.getInt(1));
+                                            ps1.executeUpdate(upd);
+                                        }
+                                    } else {
+                                        String ins = "INSERT INTO documenti_progetti (path,idprogetto,tipo) VALUES (?,?,?)";
+                                        try (PreparedStatement ps1 = db3.getConnection().prepareStatement(ins)) {
+                                            ps1.setString(1, pdf_final.getPath());
+                                            ps1.setInt(2, idpr);
+                                            ps1.setInt(3, 29);
+                                            ps1.execute();
+                                        }
                                     }
                                 }
                             }
@@ -414,10 +422,13 @@ public class FaseA {
             String now1 = adesso.toString(patternid);
             
             String pathtemp = db0.getPath("pathTemp");
-            String sql0 = "SELECT nomestanza FROM fad_multi WHERE idprogetti_formativi=" + idpr;
-            try (Statement st0 = db0.getConnection().createStatement(); ResultSet rs0 = st0.executeQuery(sql0)) {    //STANZA
-                if (rs0.next()) {
-                    nomestanza.append(rs0.getString(1));
+            String sql0 = "SELECT nomestanza FROM fad_multi WHERE idprogetti_formativi = ?";
+            try (PreparedStatement ps = db0.getConnection().prepareStatement(sql0)) {
+                ps.setInt(1, idpr);
+                try (ResultSet rs0 = ps.executeQuery()) {
+                    if (rs0.next()) {
+                        nomestanza.append(rs0.getString(1));
+                    }
                 }
             }
             db0.closeDB();
@@ -428,19 +439,22 @@ public class FaseA {
                 Db_Gest db1 = new Db_Gest(host);
                 String sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud "
                         + "    WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario AND ud.codice=lc.codice_ud "
-                        + " AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase A' AND lm.giorno < CURDATE() GROUP BY lm.giorno ORDER BY lc.lezione,lm.orario_start";
+                        + " AND mp.id_progettoformativo = ? AND ud.fase = 'Fase A' AND lm.giorno < CURDATE() GROUP BY lm.giorno ORDER BY lc.lezione,lm.orario_start";
                 
                 if (today) {
                     sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud "
                             + " WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario AND ud.codice=lc.codice_ud "
-                            + " AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase A' AND lm.giorno <= CURDATE() GROUP BY lm.giorno ORDER BY lc.lezione,lm.orario_start";
+                            + " AND mp.id_progettoformativo = ? AND ud.fase = 'Fase A' AND lm.giorno <= CURDATE() GROUP BY lm.giorno ORDER BY lc.lezione,lm.orario_start";
                 }
-                try (Statement st1 = db1.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
-                    while (rs1.next()) {
-                        calendar.add(new Lezione(rs1.getInt("lc.lezione"), rs1.getInt("lm.id_docente"),
-                                rs1.getString("lm.giorno"), rs1.getString("lm.orario_start"),
-                                rs1.getString("lm.orario_end"),
-                                rs1.getString("ud.codice"), rs1.getString("lc.ore"), 1, nomestanza.toString()));
+                try (PreparedStatement ps1 = db1.getConnection().prepareStatement(sql1)) {
+                    ps1.setInt(1, idpr);
+                    try (ResultSet rs1 = ps1.executeQuery()) {
+                        while (rs1.next()) {
+                            calendar.add(new Lezione(rs1.getInt("lc.lezione"), rs1.getInt("lm.id_docente"),
+                                    rs1.getString("lm.giorno"), rs1.getString("lm.orario_start"),
+                                    rs1.getString("lm.orario_end"),
+                                    rs1.getString("ud.codice"), rs1.getString("lc.ore"), 1, nomestanza.toString()));
+                        }
                     }
                 }
 
@@ -454,7 +468,7 @@ public class FaseA {
                 normal.setFont(fontnormal).setFontSize(10);
 
                 //CREA PDF REPORT
-                File out0 = new File(pathtemp + now0 + "reportfaseA_" + idpr + ".pdf");
+                File out0 = createFile(pathtemp + now0 + "reportfaseA_" + idpr + ".pdf");
 //                System.out.println(out0.getAbsolutePath());
                 PdfWriter pw0 = new PdfWriter(out0);
                 PdfDocument pdfDoc = new PdfDocument(pw0);
@@ -468,35 +482,37 @@ public class FaseA {
                     Table table = new Table(UnitValue.createPercentArray(8)).useAllAvailableWidth();
                     try {
                         String day = cal.getGiorno();
-                        String sql = "SELECT * FROM registro_completo WHERE idprogetti_formativi = "
-                                + idpr + " AND data = '" + day
-                                + "' AND fase='A' ORDER BY ruolo DESC,cognome ASC,nome ASC";
-                        try (Statement st = db1.getConnection().createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                            while (rs.next()) {
-                                Registro_completo rc = new Registro_completo(
-                                        rs.getInt(1),
-                                        rs.getInt(2),
-                                        rs.getInt(3),
-                                        rs.getString(4),
-                                        new DateTime(rs.getDate(5).getTime()),
-                                        rs.getString(6),
-                                        rs.getInt(7),
-                                        rs.getString(8),
-                                        rs.getString(9),
-                                        rs.getLong(10),
-                                        rs.getString(11),
-                                        rs.getString(12),
-                                        rs.getInt(13),
-                                        rs.getString(14),
-                                        rs.getString(15),
-                                        rs.getString(16),
-                                        rs.getString(17),
-                                        rs.getString(18),
-                                        rs.getString(19),
-                                        rs.getLong(20),
-                                        rs.getLong(21),
-                                        rs.getInt(23));
-                                registro.add(rc);
+                        String sql = "SELECT * FROM registro_completo WHERE idprogetti_formativi = ? AND data = ? AND fase='A' ORDER BY ruolo DESC,cognome ASC,nome ASC";
+                        try (PreparedStatement ps = db1.getConnection().prepareStatement(sql)) {
+                            ps.setInt(1, idpr);
+                            ps.setString(2, day);
+                            try (ResultSet rs = ps.executeQuery()) {
+                                while (rs.next()) {
+                                    Registro_completo rc = new Registro_completo(
+                                            rs.getInt(1),
+                                            rs.getInt(2),
+                                            rs.getInt(3),
+                                            rs.getString(4),
+                                            new DateTime(rs.getDate(5).getTime()),
+                                            rs.getString(6),
+                                            rs.getInt(7),
+                                            rs.getString(8),
+                                            rs.getString(9),
+                                            rs.getLong(10),
+                                            rs.getString(11),
+                                            rs.getString(12),
+                                            rs.getInt(13),
+                                            rs.getString(14),
+                                            rs.getString(15),
+                                            rs.getString(16),
+                                            rs.getString(17),
+                                            rs.getString(18),
+                                            rs.getString(19),
+                                            rs.getLong(20),
+                                            rs.getLong(21),
+                                            rs.getInt(23));
+                                    registro.add(rc);
+                                }
                             }
                         }
                         
@@ -694,7 +710,7 @@ public class FaseA {
                     pw0.close();
                     
                     String qrcontent = "ID " + idpr + " REGISTRO FASE A - AGGIORNATO IL " + now;
-                    File out1 = new File(StringUtils.replace(out0.getPath(), ".pdf", "_qr.pdf"));
+                    File out1 = createFile(StringUtils.replace(out0.getPath(), ".pdf", "_qr.pdf"));
                     try (PdfReader p2 = new PdfReader(out0); PdfWriter p2w = new PdfWriter(out1); PdfDocument pdfDoc1 = new PdfDocument(p2, p2w)) {
                         BarcodeQRCode barcode = new BarcodeQRCode(qrcontent);
                         String add = "Questo registro è stato generato automaticamente dalla piattaforma raggiungibile al link: " + linkpiattaforma;
@@ -706,28 +722,33 @@ public class FaseA {
                         out1.deleteOnExit();
                         
                         createDir(path_destinazione);
-                        File pdf_final = new File(path_destinazione + File.separator + "Registro Fase A_" + now1 + ".pdf");
+                        File pdf_final = createFile(path_destinazione + File.separator + "Registro Fase A_" + now1 + ".pdf");
                         FileUtils.copyFile(out2, pdf_final);
                         if (checkPDF(pdf_final)) {
                             out2.deleteOnExit();
                             if (save) {
                                 Db_Gest db3 = new Db_Gest(host);
-                                String sql = "SELECT iddocumenti_progetti FROM documenti_progetti WHERE idprogetto = " + idpr + " AND tipo = 29";
-                                try (Statement st = db3.getConnection().createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                                    if (rs.next()) {
-                                        try (Statement st1 = db3.getConnection().createStatement()) {
-                                            String upd = "UPDATE documenti_progetti SET path = '" + pdf_final.getPath() + "' WHERE iddocumenti_progetti = " + rs.getInt(1);
-                                            st1.executeUpdate(upd);
+                                String sql = "SELECT iddocumenti_progetti FROM documenti_progetti WHERE idprogetto = ? AND tipo = 29";
+                                try (PreparedStatement ps = db3.getConnection().prepareStatement(sql)) {
+                                    ps.setInt(1, idpr);
+                                    try (ResultSet rs = ps.executeQuery(sql)) {
+                                        if (rs.next()) {
+                                            String upd = "UPDATE documenti_progetti SET path = ? WHERE iddocumenti_progetti = ?";
+                                            try (PreparedStatement ps1 = db3.getConnection().prepareStatement(upd)) {
+                                                ps1.setString(1, pdf_final.getPath());
+                                                ps1.setInt(2, rs.getInt(1));
+                                                ps1.executeUpdate(upd);
+                                            }
+                                        } else {
+                                            String ins = "INSERT INTO documenti_progetti (path,idprogetto,tipo) VALUES (?,?,?)";
+                                            try (PreparedStatement ps1 = db3.getConnection().prepareStatement(ins)) {
+                                                ps1.setString(1, pdf_final.getPath());
+                                                ps1.setInt(2, idpr);
+                                                ps1.setInt(3, 29);
+                                                ps1.execute();
+                                            }
+                                            
                                         }
-                                    } else {
-                                        String ins = "INSERT INTO documenti_progetti (path,idprogetto,tipo) VALUES (?,?,?)";
-                                        try (PreparedStatement ps1 = db3.getConnection().prepareStatement(ins)) {
-                                            ps1.setString(1, pdf_final.getPath());
-                                            ps1.setInt(2, idpr);
-                                            ps1.setInt(3, 29);
-                                            ps1.execute();
-                                        }
-                                        
                                     }
                                 }
                                 db3.closeDB();
@@ -754,23 +775,26 @@ public class FaseA {
             
             String sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore,mp.id_modello FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud "
                     + " WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario AND ud.codice=lc.codice_ud "
-                    + " AND lm.tipolez='P' AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase A' AND lm.giorno < CURDATE() ORDER BY lc.lezione,lm.orario_start";
+                    + " AND lm.tipolez='P' AND mp.id_progettoformativo = ? AND ud.fase = 'Fase A' AND lm.giorno < CURDATE() ORDER BY lc.lezione,lm.orario_start";
             
-            try (Statement st1 = db1.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
-                if (printing) {
-                    log.log(Level.INFO, "2) {0}", sql1);
-                }
-                while (rs1.next()) {
-                    
-                    Lezione temp1 = new Lezione(rs1.getInt("lc.lezione"),
-                            rs1.getInt("lm.id_docente"),
-                            rs1.getString("lm.giorno"), rs1.getString("lm.orario_start"), rs1.getString("lm.orario_end"),
-                            rs1.getString("ud.codice"), rs1.getString("lc.ore"), 1, null);
-                    temp1.setMpid_modello(rs1.getInt("mp.id_modello"));
-                    calendartemp.add(temp1);
-                }
-                if (printing) {
-                    log.log(Level.INFO, "2) {0}", calendartemp.size());
+            try (PreparedStatement ps1 = db1.getConnection().prepareStatement(sql1)) {
+                ps1.setInt(1, idpr);
+                try (ResultSet rs1 = ps1.executeQuery()) {
+                    if (printing) {
+                        log.log(Level.INFO, "2) {0}", sql1);
+                    }
+                    while (rs1.next()) {
+                        
+                        Lezione temp1 = new Lezione(rs1.getInt("lc.lezione"),
+                                rs1.getInt("lm.id_docente"),
+                                rs1.getString("lm.giorno"), rs1.getString("lm.orario_start"), rs1.getString("lm.orario_end"),
+                                rs1.getString("ud.codice"), rs1.getString("lc.ore"), 1, null);
+                        temp1.setMpid_modello(rs1.getInt("mp.id_modello"));
+                        calendartemp.add(temp1);
+                    }
+                    if (printing) {
+                        log.log(Level.INFO, "2) {0}", calendartemp.size());
+                    }
                 }
             }
             
@@ -844,19 +868,22 @@ public class FaseA {
             List<Utenti> docenti_corretti = db0.list_Docenti(idpr);
             List<Utenti> allievi = db0.list_Allievi_noAccento(idpr);
             List<Utenti> allievi_corretti = db0.list_Allievi(idpr);
-            String sql0 = "SELECT nomestanza FROM fad_multi WHERE idprogetti_formativi=" + idpr;
-            try (Statement st0 = db0.getConnection().createStatement(); ResultSet rs0 = st0.executeQuery(sql0)) {    //STANZA
-                if (printing) {
-                    log.log(Level.INFO, "1) {0}", sql0);
-                }
-                if (rs0.next()) {
+            String sql0 = "SELECT nomestanza FROM fad_multi WHERE idprogetti_formativi = ?";
+            try (PreparedStatement ps1 = db0.getConnection().prepareStatement(sql0)) {
+                ps1.setInt(1, idpr);
+                try (ResultSet rs0 = ps1.executeQuery()) {   //STANZA
                     if (printing) {
-                        log.info("1) TRUE");
+                        log.log(Level.INFO, "1) {0}", sql0);
                     }
-                    nomestanza.append(rs0.getString(1));
-                } else {
-                    if (printing) {
-                        log.info("1) FALSE");
+                    if (rs0.next()) {
+                        if (printing) {
+                            log.info("1) TRUE");
+                        }
+                        nomestanza.append(rs0.getString(1));
+                    } else {
+                        if (printing) {
+                            log.info("1) FALSE");
+                        }
                     }
                 }
             }
@@ -871,29 +898,32 @@ public class FaseA {
 //                manage(db1, idpr);
                 String sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore,mp.id_modello FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud "
                         + " WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario AND ud.codice=lc.codice_ud "
-                        + " AND lm.tipolez='F' AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase A' AND lm.giorno < CURDATE() ORDER BY lc.lezione,lm.orario_start";
+                        + " AND lm.tipolez='F' AND mp.id_progettoformativo = ? AND ud.fase = 'Fase A' AND lm.giorno < CURDATE() ORDER BY lc.lezione,lm.orario_start";
                 
                 if (today) {
                     sql1 = "SELECT lc.lezione,lm.giorno,lm.orario_start,lm.orario_end,lm.id_docente,ud.codice,lc.ore,mp.id_modello FROM lezioni_modelli lm, modelli_progetti mp, lezione_calendario lc, unita_didattiche ud "
                             + " WHERE mp.id_modello=lm.id_modelli_progetto AND lc.id_lezionecalendario=lm.id_lezionecalendario AND ud.codice=lc.codice_ud "
-                            + " AND lm.tipolez='F' AND mp.id_progettoformativo=" + idpr + " AND ud.fase = 'Fase A' AND lm.giorno <= CURDATE() ORDER BY lc.lezione,lm.orario_start";
+                            + " AND lm.tipolez='F' AND mp.id_progettoformativo = ? AND ud.fase = 'Fase A' AND lm.giorno <= CURDATE() ORDER BY lc.lezione,lm.orario_start";
                 }
                 
-                try (Statement st1 = db1.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
-                    if (printing) {
-                        log.log(Level.INFO, "2) {0}", sql1);
-                    }
-                    while (rs1.next()) {
-                        
-                        Lezione temp1 = new Lezione(rs1.getInt("lc.lezione"),
-                                rs1.getInt("lm.id_docente"),
-                                rs1.getString("lm.giorno"), rs1.getString("lm.orario_start"), rs1.getString("lm.orario_end"),
-                                rs1.getString("ud.codice"), rs1.getString("lc.ore"), 1, nomestanza.toString());
-                        temp1.setMpid_modello(rs1.getInt("mp.id_modello"));
-                        calendartemp.add(temp1);
-                    }
-                    if (printing) {
-                        log.log(Level.INFO, "2) {0}", calendartemp.size());
+                try (PreparedStatement ps1 = db1.getConnection().prepareStatement(sql1)) {
+                    ps1.setInt(1, idpr);
+                    try (ResultSet rs1 = ps1.executeQuery()) {
+                        if (printing) {
+                            log.log(Level.INFO, "2) {0}", sql1);
+                        }
+                        while (rs1.next()) {
+                            
+                            Lezione temp1 = new Lezione(rs1.getInt("lc.lezione"),
+                                    rs1.getInt("lm.id_docente"),
+                                    rs1.getString("lm.giorno"), rs1.getString("lm.orario_start"), rs1.getString("lm.orario_end"),
+                                    rs1.getString("ud.codice"), rs1.getString("lc.ore"), 1, nomestanza.toString());
+                            temp1.setMpid_modello(rs1.getInt("mp.id_modello"));
+                            calendartemp.add(temp1);
+                        }
+                        if (printing) {
+                            log.log(Level.INFO, "2) {0}", calendartemp.size());
+                        }
                     }
                 }
                 db1.closeDB();
@@ -953,17 +983,22 @@ public class FaseA {
                             String day = cal.getGiorno();
                             String idriuunione = StringUtils.remove(datisa[1], "_") + "_" + cal.getCodiceud() + "_" + dtf.parseDateTime(day).toString(patternid);
                             String nudfasea = cal.getCodiceud();
-                            String sql = "SELECT id FROM registro_completo WHERE idprogetti_formativi = " + idpr + " AND data = '" + day + "' AND idriunione = '" + idriuunione + "'";
+                            String sql = "SELECT id FROM registro_completo WHERE idprogetti_formativi = ? AND data = ? AND idriunione = ?";
                             try {
-                                try (Statement st = db2.getConnection().createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                                    if (printing) {
-                                        log.log(Level.INFO, "3) {0}", sql);
-                                    }
-                                    if (rs.next()) {
-                                        presente.addAndGet(1);
-                                    }
-                                    if (printing) {
-                                        log.log(Level.INFO, "3) {0}", presente.get());
+                                try (PreparedStatement ps = db2.getConnection().prepareStatement(sql)) {
+                                    ps.setInt(1, idpr);
+                                    ps.setString(2, day);
+                                    ps.setString(3, idriuunione);
+                                    try (ResultSet rs = ps.executeQuery()) {
+                                        if (printing) {
+                                            log.log(Level.INFO, "3) {0}", sql);
+                                        }
+                                        if (rs.next()) {
+                                            presente.addAndGet(1);
+                                        }
+                                        if (printing) {
+                                            log.log(Level.INFO, "3) {0}", presente.get());
+                                        }
                                     }
                                 }
                             } catch (Exception ex) {
@@ -980,95 +1015,97 @@ public class FaseA {
                                 List<Items> idutenti = new ArrayList<>();
                                 List<Utenti> tutti = new ArrayList<>();
                                 try {
-                                    String sql2 = "SELECT type,action,date FROM fad_track f WHERE f.room = '" + cal.getNomestanza().trim() + "' "
-                                    + "AND f.date > '" + day + " 04:00' AND f.date < '" + day + " 23:00'"
-                                    + "ORDER BY f.date";
-                                    try (Statement st2 = db2.getConnection().createStatement(); ResultSet rs2 = st2.executeQuery(sql2)) {
-                                        if (printing) {
-                                            log.log(Level.INFO, "4) {0}", sql2);
-                                        }
-                                        while (rs2.next()) {
-                                            String tipoazione = rs2.getString(1);
-                                            String action = rs2.getString(2);
-                                            String azione = stripAccents(action.toUpperCase().replaceAll(":", ";"));
-                                            if (azione.contains("MESSAGGIO ->")) {
-                                                continue;
+                                    String sql2 = "SELECT type,action,date FROM fad_track f WHERE f.room = ? AND f.date > ? AND f.date < ? ORDER BY f.date";
+                                    try (PreparedStatement ps2 = db2.getConnection().prepareStatement(sql2)) {
+                                        ps2.setString(1, cal.getNomestanza().trim());
+                                        ps2.setString(2, day + " 04:00");
+                                        ps2.setString(3, day + " 23:00");
+                                        try (ResultSet rs2 = ps2.executeQuery()) {
+                                            if (printing) {
+                                                log.log(Level.INFO, "4) {0}", sql2);
                                             }
-                                            String date = convertTS_Italy(rs2.getString(3));
-                                            switch (tipoazione) {
-                                                case "L1", "L2", "L3" -> {
-                                                    if (azione.startsWith("ALLIEVO")) {
-                                                        try {
-                                                            int idallievo = Integer.parseInt(azione.split(";")[1]);
-                                                            Utenti u = allievi.stream().filter(al -> al.getId() == idallievo).findFirst().get();
-                                                            azione = azioni.stream().filter(az -> az.getCod().equalsIgnoreCase(tipoazione)).findFirst().get().getDescrizione() + " -> "
-                                                            + u.getNome() + " "
-                                                            + u.getCognome();
-                                                            Track t1 = new Track("USER", tipoazione, azione, date, day, null);
-                                                            tracking.add(t1);
-                                                            tutti.add(u);
-                                                        } catch (Exception ex) {
-                                                            log.severe(Constant.estraiEccezione(ex));
-                                                        }
-                                                    } else if (azione.startsWith("DOCENTE")) {
-                                                        try {
-                                                            int iddocente = Integer.parseInt(azione.split(";")[1]);
-                                                            Utenti u = docenti.stream().filter(al -> al.getId() == iddocente).findFirst().get();
-                                                            azione = azioni.stream().filter(az -> az.getCod().equalsIgnoreCase(tipoazione)).findFirst().get().getDescrizione() + " -> "
-                                                            + u.getNome() + " "
-                                                            + u.getCognome();
-                                                            Track t1 = new Track("DOCENTE", tipoazione, azione, date, day, null);
-                                                            tracking.add(t1);
-                                                            tutti.add(u);
-                                                        } catch (Exception ex) {
-                                                            log.severe(Constant.estraiEccezione(ex));
-                                                        }
-                                                    }
+                                            while (rs2.next()) {
+                                                String tipoazione = rs2.getString(1);
+                                                String action = rs2.getString(2);
+                                                String azione = stripAccents(action.toUpperCase().replaceAll(":", ";"));
+                                                if (azione.contains("MESSAGGIO ->")) {
+                                                    continue;
                                                 }
-                                                case "L5" -> {
-                                                }
-                                                case "L4" -> {
-                                                }
-                                                case "IN" -> {
-                                                    if (azione.startsWith("UTENTE LOGGATO CON ID")) {
-                                                        String idfad = StringUtils.remove(azione.split("--")[0], "UTENTE LOGGATO CON ID").trim();
-                                                        if (azione.split("--").length > 1) {
-                                                            String nomecogn = azione.split("--")[1].trim().toUpperCase();
-                                                            idutenti.add(new Items(idfad, nomecogn));
-                                                        }
-                                                    } else if (azione.startsWith("AVATAR MODIFICATO")) {
-                                                        try {
-                                                            String idfad = Splitter.on("->").splitToList(azione).get(1).trim();
-                                                            if (StringUtils.isNumeric(idfad)) {
-                                                                if (tutti.stream().filter(ut -> ut.getId() == Integer.parseInt(idfad)).findAny().orElse(null) != null) {
-                                                                    Utenti u1 = tutti.stream().filter(ut -> ut.getId() == Integer.parseInt(idfad)).findAny().get();
-                                                                    Track t1 = new Track(u1.getRuolo(), "L1", "Login -> " + u1.getNome() + " " + u1.getCognome(), date, day, null);
-                                                                    tracking.add(t1);
-                                                                }
-                                                            } else {
-                                                                if (idutenti.stream().filter(ut -> ut.getCod().equals(idfad)).findAny().orElse(null) != null) {
-                                                                    String nomecogn = idutenti.stream().filter(ut -> ut.getCod().equals(idfad)).findFirst().get().getDescrizione().toUpperCase();
-                                                                    Track t1 = new Track("", "L1", "Login -> " + nomecogn, date, day, idfad);
-                                                                    tracking.add(t1);
-                                                                }
+                                                String date = convertTS_Italy(rs2.getString(3));
+                                                switch (tipoazione) {
+                                                    case "L1", "L2", "L3" -> {
+                                                        if (azione.startsWith("ALLIEVO")) {
+                                                            try {
+                                                                int idallievo = Integer.parseInt(azione.split(";")[1]);
+                                                                Utenti u = allievi.stream().filter(al -> al.getId() == idallievo).findFirst().orElse(new Utenti());
+                                                                azione = azioni.stream().filter(az -> az.getCod().equalsIgnoreCase(tipoazione)).findFirst().orElse(new Items("-", "-")).getDescrizione() + " -> "
+                                                                + u.getNome() + " "
+                                                                + u.getCognome();
+                                                                Track t1 = new Track("USER", tipoazione, azione, date, day, null);
+                                                                tracking.add(t1);
+                                                                tutti.add(u);
+                                                            } catch (Exception ex) {
+                                                                log.severe(Constant.estraiEccezione(ex));
                                                             }
-                                                        } catch (Exception e1) {
-                                                            log.severe(Constant.estraiEccezione(e1));
-                                                        }
-                                                    } else if (azione.startsWith("NUOVO PARTECIPANTE")) {
-                                                        String nomecogn = azione.split("--")[1].trim().toUpperCase();
-                                                        if (!nomecogn.contains("UNDEFINED")) {
-                                                            String idfad = StringUtils.remove(azione.split("--")[0], "NUOVO PARTECIPANTE ->").trim();
-                                                            idutenti.add(new Items(idfad, nomecogn));
-                                                            Track t1 = new Track("", "L1", "Login -> " + nomecogn, date, day, idfad);
-                                                            tracking.add(t1);
+                                                        } else if (azione.startsWith("DOCENTE")) {
+                                                            try {
+                                                                int iddocente = Integer.parseInt(azione.split(";")[1]);
+                                                                Utenti u = docenti.stream().filter(al -> al.getId() == iddocente).findFirst().orElse(new Utenti());
+                                                                azione = azioni.stream().filter(az -> az.getCod().equalsIgnoreCase(tipoazione)).findFirst().orElse(new Items("-", "-")).getDescrizione() + " -> "
+                                                                + u.getNome() + " "
+                                                                + u.getCognome();
+                                                                Track t1 = new Track("DOCENTE", tipoazione, azione, date, day, null);
+                                                                tracking.add(t1);
+                                                                tutti.add(u);
+                                                            } catch (Exception ex) {
+                                                                log.severe(Constant.estraiEccezione(ex));
+                                                            }
                                                         }
                                                     }
+                                                    case "L5" -> {
+                                                    }
+                                                    case "L4" -> {
+                                                    }
+                                                    case "IN" -> {
+                                                        if (azione.startsWith("UTENTE LOGGATO CON ID")) {
+                                                            String idfad = StringUtils.remove(azione.split("--")[0], "UTENTE LOGGATO CON ID").trim();
+                                                            if (azione.split("--").length > 1) {
+                                                                String nomecogn = azione.split("--")[1].trim().toUpperCase();
+                                                                idutenti.add(new Items(idfad, nomecogn));
+                                                            }
+                                                        } else if (azione.startsWith("AVATAR MODIFICATO")) {
+                                                            try {
+                                                                String idfad = Splitter.on("->").splitToList(azione).get(1).trim();
+                                                                if (StringUtils.isNumeric(idfad)) {
+                                                                    if (tutti.stream().filter(ut -> ut.getId() == Integer.parseInt(idfad)).findAny().orElse(null) != null) {
+                                                                        Utenti u1 = tutti.stream().filter(ut -> ut.getId() == Integer.parseInt(idfad)).findAny().orElse(new Utenti());
+                                                                        Track t1 = new Track(u1.getRuolo(), "L1", "Login -> " + u1.getNome() + " " + u1.getCognome(), date, day, null);
+                                                                        tracking.add(t1);
+                                                                    }
+                                                                } else {
+                                                                    if (idutenti.stream().filter(ut -> ut.getCod().equals(idfad)).findAny().orElse(null) != null) {
+                                                                        String nomecogn = idutenti.stream().filter(ut -> ut.getCod().equals(idfad)).findFirst().orElse(new Items("-", "-")).getDescrizione().toUpperCase();
+                                                                        Track t1 = new Track("", "L1", "Login -> " + nomecogn, date, day, idfad);
+                                                                        tracking.add(t1);
+                                                                    }
+                                                                }
+                                                            } catch (Exception e1) {
+                                                                log.severe(Constant.estraiEccezione(e1));
+                                                            }
+                                                        } else if (azione.startsWith("NUOVO PARTECIPANTE")) {
+                                                            String nomecogn = azione.split("--")[1].trim().toUpperCase();
+                                                            if (!nomecogn.contains("UNDEFINED")) {
+                                                                String idfad = StringUtils.remove(azione.split("--")[0], "NUOVO PARTECIPANTE ->").trim();
+                                                                idutenti.add(new Items(idfad, nomecogn));
+                                                                Track t1 = new Track("", "L1", "Login -> " + nomecogn, date, day, idfad);
+                                                                tracking.add(t1);
+                                                            }
+                                                        }
+                                                    }
+                                                    default -> {
+                                                    }
                                                 }
-                                                default -> {
-                                                }
-                                            }
-                                            //USCITI TUTTI
+                                                //USCITI TUTTI
 //                                                List<Utenti> t11 = tutti.stream().distinct().collect(Collectors.toList());
 //                                                t11.forEach(u1 -> {
 //                                                    Track t1 = new Track(u1.getRuolo(), "L2", "Logout -> " + u1.getNome() + " " + u1.getCognome(), date, day, null);
@@ -1086,6 +1123,7 @@ public class FaseA {
 //                                                } catch (Exception ex) {
 //                                                    Create.log.severe(Constant.estraiEccezione(ex));
 //                                                }
+                                            }
                                         }
                                     }
                                 } catch (Exception ex) {
@@ -1096,9 +1134,8 @@ public class FaseA {
                                     
                                     boolean contentallievo = allievi.stream().anyMatch(al -> tr1.getDescr().contains(al.getDescrizione()));
                                     if (contentallievo) {
-                                        Utenti a = allievi.stream().filter(al -> tr1.getDescr().contains(al.getDescrizione())).findAny().get();
-                                        Utenti a1 = allievi_corretti.stream().filter(al -> al.getId() == a.getId()).findAny().get();
-                                        
+                                        Utenti a = allievi.stream().filter(al -> tr1.getDescr().contains(al.getDescrizione())).findAny().orElse(new Utenti());
+                                        Utenti a1 = allievi_corretti.stream().filter(al -> al.getId() == a.getId()).findAny().orElse(new Utenti());
                                         Presenti pr1 = new Presenti(a1.getNome(), a1.getCognome(), a.getCf(), a.getEmail(), a.getRuolo());
                                         if (tr1.getDescr().contains("Login")) {
                                             pr1.setLogin(true);
@@ -1110,8 +1147,8 @@ public class FaseA {
                                     } else {
                                         boolean contentdocente = docenti.stream().anyMatch(al -> tr1.getDescr().contains(al.getDescrizione()));
                                         if (contentdocente) {
-                                            Utenti a = docenti.stream().filter(al -> tr1.getDescr().contains(al.getDescrizione())).findAny().get();
-                                            Utenti a1 = docenti_corretti.stream().filter(al -> al.getId() == a.getId()).findAny().get();
+                                            Utenti a = docenti.stream().filter(al -> tr1.getDescr().contains(al.getDescrizione())).findAny().orElse(new Utenti());
+                                            Utenti a1 = docenti_corretti.stream().filter(al -> al.getId() == a.getId()).findAny().orElse(new Utenti());
                                             if (cal.getDocente().contains(a1.getId())) {
                                                 Presenti pr1 = new Presenti(a1.getNome(), a1.getCognome(), a.getCf(), a.getEmail(), a.getRuolo());
                                                 if (tr1.getDescr().contains("Login")) {
@@ -1133,7 +1170,7 @@ public class FaseA {
                                 List<String> dist_cf = Lists.reverse(presenti).stream().map(cf -> cf.getCf()).distinct().collect(Collectors.toList());
                                 
                                 dist_cf.forEach(tr1 -> {
-                                    Presenti selected = presenti.stream().filter(cf -> cf.getCf().equalsIgnoreCase(tr1)).findFirst().get();
+                                    Presenti selected = presenti.stream().filter(cf -> cf.getCf().equalsIgnoreCase(tr1)).findFirst().orElse(new Presenti("-", "-", "-", "-", "-"));
                                     List<Presenti> userp = presenti.stream().filter(d -> d.getCf().equalsIgnoreCase(tr1)).distinct().collect(Collectors.toList());
                                     List<Presenti> login = userp.stream().filter(d -> d.isLogin()).distinct().collect(Collectors.toList());
 //                                    List<Presenti> logout = userp.stream().filter(d -> d.isLogout()).distinct().collect(Collectors.toList());

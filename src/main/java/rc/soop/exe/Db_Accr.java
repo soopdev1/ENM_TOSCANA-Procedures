@@ -22,8 +22,10 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import static org.apache.commons.lang3.StringUtils.stripAccents;
 import static rc.soop.exe.Utils.conf;
+import static rc.soop.exe.Utils.estraiEccezione;
 import static rc.soop.exe.Utils.formatStringtoStringDateSQL;
 import static rc.soop.exe.Utils.parseIntR;
+import static rc.soop.gestione.Toscana_gestione.log;
 
 /**
  *
@@ -56,12 +58,12 @@ public class Db_Accr {
             p.put("useUnicode", "true");
             this.c = DriverManager.getConnection("jdbc:mysql://" + host, p);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.severe(estraiEccezione(ex));
             if (this.c != null) {
                 try {
                     this.c.close();
                 } catch (Exception ex1) {
-                    ex1.printStackTrace();
+                    log.severe(estraiEccezione(ex1));
                 }
             }
             this.c = null;
@@ -84,11 +86,13 @@ public class Db_Accr {
             p.put("useUnicode", "true");
             this.c = DriverManager.getConnection("jdbc:mysql://" + host, p);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.severe(estraiEccezione(ex));
+
             if (this.c != null) {
                 try {
                     this.c.close();
                 } catch (Exception ex1) {
+                    log.severe(estraiEccezione(ex1));
                 }
             }
             this.c = null;
@@ -100,7 +104,8 @@ public class Db_Accr {
             if (this.c != null) {
                 this.c.close();
             }
-        } catch (SQLException ex) {
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
     }
 
@@ -120,8 +125,8 @@ public class Db_Accr {
                     }
                 }
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return path;
     }
@@ -135,8 +140,8 @@ public class Db_Accr {
                     out.add(rs.getInt(1));
                 }
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -150,8 +155,8 @@ public class Db_Accr {
                 ps.execute();
             }
             return true;
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return false;
     }
@@ -168,32 +173,37 @@ public class Db_Accr {
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
 
     public String formatStatoDomanda(String statoDomanda) {
         try {
-
             switch (statoDomanda) {
-                case "S":
+                case "S" -> {
                     return "NON PROCESSATA";
-                case "R":
+                }
+                case "R" -> {
                     return "RIGETTATA";
-                case "A":
+                }
+                case "A" -> {
                     return "APPROVATA";
-                case "A1":
+                }
+                case "A1" -> {
                     return "CONVENZIONE SA";
-                case "A2":
+                }
+                case "A2" -> {
                     return "SA ATTIVO";
-                case "A3":
+                }
+                case "A3" -> {
                     return "IN ATTESA FIRMA ENM";
-                default:
-                    break;
+                }
+                default -> {
+                }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return "";
     }
@@ -201,14 +211,17 @@ public class Db_Accr {
     public int countDocumentConvenzioni(String username) {
         int var1 = 0;
         try {
-            String query = "select count(*) from docuserconvenzioni where username='" + username + "'";
-            try (PreparedStatement ps = this.c.prepareStatement(query); ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    var1 = rs.getInt(1);
+            String query = "select count(*) from docuserconvenzioni where username = ?";
+            try (PreparedStatement ps = this.c.prepareStatement(query)) {
+                ps.setString(1, username);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        var1 = rs.getInt(1);
+                    }
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.severe(estraiEccezione(ex));
         }
         return var1;
     }
@@ -216,14 +229,17 @@ public class Db_Accr {
     public String getInvioEmailROMA(String username) {
         String out = "0";
         try {
-            String query = "select username,sendmail from docuserconvenzioni where username='" + username + "' and codicedoc='CONV'";
-            try (PreparedStatement ps = this.c.prepareStatement(query); ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    out = rs.getString("sendmail");
+            String query = "select username,sendmail from docuserconvenzioni where username = ? and codicedoc='CONV'";
+            try (PreparedStatement ps = this.c.prepareStatement(query)) {
+                ps.setString(1, username);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        out = rs.getString("sendmail");
+                    }
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -231,14 +247,17 @@ public class Db_Accr {
     public String getConvenzioneROMA(String username) {
         String pathRoma = "";
         try {
-            String query = "select path from convenzioniroma where username = '" + username + "' order by timestamp desc limit 1";
-            try (PreparedStatement ps = this.c.prepareStatement(query); ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    pathRoma = rs.getString("path");
+            String query = "select path from convenzioniroma where username = ? order by timestamp desc limit 1";
+            try (PreparedStatement ps = this.c.prepareStatement(query)) {
+                ps.setString(1, username);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        pathRoma = rs.getString("path");
+                    }
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return pathRoma;
     }
@@ -289,57 +308,56 @@ public class Db_Accr {
                         ex1.setSTATODOMANDA(formatStatoDomanda(rs.getString("stato_domanda")));
                     }
 
-                    String sql2 = "SELECT * FROM usersvalori WHERE username= '" + USERNAME + "'";
-                    try (PreparedStatement ps2 = this.c.prepareStatement(sql2); ResultSet rs2 = ps2.executeQuery()) {
-                        while (rs2.next()) {
-                            String campo = rs2.getString("campo");
-                            String valore = rs2.getString("valore").toUpperCase().trim();
-                            String valore1 = rs2.getString("valore").toUpperCase().trim();
+                    String sql2 = "SELECT * FROM usersvalori WHERE username = ?";
+                    try (PreparedStatement ps2 = this.c.prepareStatement(sql2)) {
+                        ps2.setString(1, USERNAME);
+                        try (ResultSet rs2 = ps2.executeQuery()) {
+                            while (rs2.next()) {
+                                String campo = rs2.getString("campo");
+                                String valore = rs2.getString("valore").toUpperCase().trim();
+                                String valore1 = rs2.getString("valore").toUpperCase().trim();
 
-                            switch (campo) {
-                                case "sedeindirizzo":
-                                    ex1.setSEDELEGALEINDIRIZZO(valore.toUpperCase());
-                                    break;
-                                case "sedecap":
-                                    ex1.setSEDELEGALECAP(valore.toUpperCase());
-                                    break;
-                                case "sedecomune":
-                                    if (!valore.equals("")) {
-                                        Comuni_rc c0 = comuni_rc.stream().filter(c1 -> (c1.getId() == parseIntR(valore))).findAny().orElse(null);
-                                        if (c0 != null) {
-                                            valore1 = c0.getNome();
+                                switch (campo) {
+                                    case "sedeindirizzo" ->
+                                        ex1.setSEDELEGALEINDIRIZZO(valore.toUpperCase());
+                                    case "sedecap" ->
+                                        ex1.setSEDELEGALECAP(valore.toUpperCase());
+                                    case "sedecomune" -> {
+                                        if (!valore.equals("")) {
+                                            Comuni_rc c0 = comuni_rc.stream().filter(c1 -> (c1.getId() == parseIntR(valore))).findAny().orElse(null);
+                                            if (c0 != null) {
+                                                valore1 = c0.getNome();
+                                            }
                                         }
+                                        ex1.setSEDELEGALECOMUNE(valore1.toUpperCase());
                                     }
-                                    ex1.setSEDELEGALECOMUNE(valore1.toUpperCase());
-                                    break;
-                                case "sedeprov":
-                                    if (!valore.equals("")) {
-                                        Comuni_rc c0 = comuni_rc.stream().filter(c1 -> c1.getCodiceprovincia().equals(valore)).findAny().orElse(null);
-                                        if (c0 != null) {
-                                            valore1 = c0.getProvincia();
+                                    case "sedeprov" -> {
+                                        if (!valore.equals("")) {
+                                            Comuni_rc c0 = comuni_rc.stream().filter(c1 -> c1.getCodiceprovincia().equals(valore)).findAny().orElse(null);
+                                            if (c0 != null) {
+                                                valore1 = c0.getProvincia();
+                                            }
                                         }
+                                        ex1.setSEDELEGALEPROVINCIA(valore1.toUpperCase());
                                     }
-                                    ex1.setSEDELEGALEPROVINCIA(valore1.toUpperCase());
-                                    break;
-                                case "sederegione":
-                                    if (!valore.equals("")) {
-                                        Comuni_rc c0 = comuni_rc.stream().filter(c1 -> c1.getCodiceregione().equals(valore)).findAny().orElse(null);
-                                        if (c0 != null) {
-                                            valore1 = c0.getRegione();
+                                    case "sederegione" -> {
+                                        if (!valore.equals("")) {
+                                            Comuni_rc c0 = comuni_rc.stream().filter(c1 -> c1.getCodiceregione().equals(valore)).findAny().orElse(null);
+                                            if (c0 != null) {
+                                                valore1 = c0.getRegione();
+                                            }
                                         }
+                                        ex1.setSEDELEGALEREGIONE(valore1.toUpperCase());
                                     }
-                                    ex1.setSEDELEGALEREGIONE(valore1.toUpperCase());
-                                    break;
-                                case "email":
-                                    ex1.setEMAIL(valore.toUpperCase());
-                                    break;
-                                case "cell":
-                                    ex1.setTELEFONO(valore.toUpperCase());
-                                    break;
-                                default:
-                                    break;
+                                    case "email" ->
+                                        ex1.setEMAIL(valore.toUpperCase());
+                                    case "cell" ->
+                                        ex1.setTELEFONO(valore.toUpperCase());
+                                    default -> {
+                                    }
+                                }
+
                             }
-
                         }
                     }
 
@@ -404,53 +422,55 @@ public class Db_Accr {
                     }
                     ex1.setTIPOLOGIASOGGETTO(tiposoggetto);
 
-                    String sql3 = "select * from allegato_b where username = '" + USERNAME + "' ORDER BY id";
+                    String sql3 = "select * from allegato_b where username = ? ORDER BY id";
 
-                    try (PreparedStatement ps3 = this.c.prepareStatement(sql3); ResultSet rs3 = ps3.executeQuery()) {
-                        while (rs3.next()) {
-
-                            switch (rs3.getInt("id")) {
-                                case 1:
-                                    ex1.setNOMEDOCENTE1(rs3.getString("nome").toUpperCase());
-                                    ex1.setCOGNOMEDOCENTE1(rs3.getString("cognome").toUpperCase());
-                                    ex1.setCFDOCENTE1(rs3.getString("cf").toUpperCase());
-                                    ex1.setFASCIAPROPOSTADOCENTE1("");
-                                    break;
-                                case 2:
-                                    ex1.setNOMEDOCENTE2(rs3.getString("nome").toUpperCase());
-                                    ex1.setCOGNOMEDOCENTE2(rs3.getString("cognome").toUpperCase());
-                                    ex1.setCFDOCENTE2(rs3.getString("cf").toUpperCase());
-                                    ex1.setFASCIAPROPOSTADOCENTE2("");
-                                    break;
-                                case 3:
-                                    ex1.setNOMEDOCENTE3(rs3.getString("nome").toUpperCase());
-                                    ex1.setCOGNOMEDOCENTE3(rs3.getString("cognome").toUpperCase());
-                                    ex1.setCFDOCENTE3(rs3.getString("cf").toUpperCase());
-                                    ex1.setFASCIAPROPOSTADOCENTE3("");
-                                    break;
-                                case 4:
-                                    ex1.setNOMEDOCENTE4(rs3.getString("nome").toUpperCase());
-                                    ex1.setCOGNOMEDOCENTE4(rs3.getString("cognome").toUpperCase());
-                                    ex1.setCFDOCENTE4(rs3.getString("cf").toUpperCase());
-                                    ex1.setFASCIAPROPOSTADOCENTE4("");
-                                    break;
-                                case 5:
-                                    ex1.setNOMEDOCENTE5(rs3.getString("nome").toUpperCase());
-                                    ex1.setCOGNOMEDOCENTE5(rs3.getString("cognome").toUpperCase());
-                                    ex1.setCFDOCENTE5(rs3.getString("cf").toUpperCase());
-                                    ex1.setFASCIAPROPOSTADOCENTE5("");
-                                    break;
-                                default:
-                                    break;
+                    try (PreparedStatement ps3 = this.c.prepareStatement(sql3)) {
+                        ps3.setString(1, USERNAME);
+                        try (ResultSet rs3 = ps.executeQuery()) {
+                            while (rs3.next()) {
+                                switch (rs3.getInt("id")) {
+                                    case 1 -> {
+                                        ex1.setNOMEDOCENTE1(rs3.getString("nome").toUpperCase());
+                                        ex1.setCOGNOMEDOCENTE1(rs3.getString("cognome").toUpperCase());
+                                        ex1.setCFDOCENTE1(rs3.getString("cf").toUpperCase());
+                                        ex1.setFASCIAPROPOSTADOCENTE1("");
+                                    }
+                                    case 2 -> {
+                                        ex1.setNOMEDOCENTE2(rs3.getString("nome").toUpperCase());
+                                        ex1.setCOGNOMEDOCENTE2(rs3.getString("cognome").toUpperCase());
+                                        ex1.setCFDOCENTE2(rs3.getString("cf").toUpperCase());
+                                        ex1.setFASCIAPROPOSTADOCENTE2("");
+                                    }
+                                    case 3 -> {
+                                        ex1.setNOMEDOCENTE3(rs3.getString("nome").toUpperCase());
+                                        ex1.setCOGNOMEDOCENTE3(rs3.getString("cognome").toUpperCase());
+                                        ex1.setCFDOCENTE3(rs3.getString("cf").toUpperCase());
+                                        ex1.setFASCIAPROPOSTADOCENTE3("");
+                                    }
+                                    case 4 -> {
+                                        ex1.setNOMEDOCENTE4(rs3.getString("nome").toUpperCase());
+                                        ex1.setCOGNOMEDOCENTE4(rs3.getString("cognome").toUpperCase());
+                                        ex1.setCFDOCENTE4(rs3.getString("cf").toUpperCase());
+                                        ex1.setFASCIAPROPOSTADOCENTE4("");
+                                    }
+                                    case 5 -> {
+                                        ex1.setNOMEDOCENTE5(rs3.getString("nome").toUpperCase());
+                                        ex1.setCOGNOMEDOCENTE5(rs3.getString("cognome").toUpperCase());
+                                        ex1.setCFDOCENTE5(rs3.getString("cf").toUpperCase());
+                                        ex1.setFASCIAPROPOSTADOCENTE5("");
+                                    }
+                                    default -> {
+                                    }
+                                }
                             }
-                        }
 
+                        }
+                        out.add(ex1);
                     }
-                    out.add(ex1);
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -461,8 +481,8 @@ public class Db_Accr {
             if (valore != null) {
                 return valore.toUpperCase().trim();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return "";
 
@@ -478,7 +498,7 @@ public class Db_Accr {
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -525,15 +545,15 @@ public class Db_Accr {
                                     valore1 = it1.getDescrizione();
                                 }
                                 map.replace(ind, valore1);
-                            } catch (Exception e) {
-                                e.printStackTrace();
+                            } catch (Exception ex) {
+                                log.severe(estraiEccezione(ex));
                             }
                         });
                     }
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return map;
     }
@@ -560,12 +580,13 @@ public class Db_Accr {
                             ps1.setString(3, data);
                             ps1.executeUpdate();
                         }
-                    } catch (Exception e1) {
-                        e1.printStackTrace();
+                    } catch (Exception ex) {
+                        log.severe(estraiEccezione(ex));
                     }
                     return true;
                 } else {
-                    e.printStackTrace();
+                    log.severe(estraiEccezione(e));
+
                 }
             }
         }
@@ -577,20 +598,22 @@ public class Db_Accr {
     public List<Utenti> list_Allievi_noAccento(int idpr) {
         List<Utenti> out = new ArrayList<>();
         try {
-            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE idprogetti_formativi = " + idpr;
-            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                while (rs.next()) {
-                    Utenti u = new Utenti(rs.getInt("idallievi"),
-                            stripAccents(rs.getString("cognome").toUpperCase()).trim(),
-                            stripAccents(rs.getString("nome").toUpperCase()).trim(),
-                            rs.getString("codicefiscale").toUpperCase(), "ALLIEVO",
-                            rs.getString("email").toLowerCase(), 
-                            rs.getString("gruppo_faseB"));
-                    out.add(u);
+            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE id_statopartecipazione IN ('15','18') AND idprogetti_formativi = ?";
+            try (PreparedStatement ps = this.c.prepareStatement(sql)) {
+                ps.setInt(1, idpr);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Utenti u = new Utenti(rs.getInt("idallievi"),
+                                stripAccents(rs.getString("cognome").toUpperCase()).trim(),
+                                stripAccents(rs.getString("nome").toUpperCase()).trim(),
+                                rs.getString("codicefiscale").toUpperCase(), "ALLIEVO",
+                                rs.getString("email").toLowerCase(), rs.getString("gruppo_faseB"));
+                        out.add(u);
+                    }
                 }
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -598,41 +621,45 @@ public class Db_Accr {
     public List<Utenti> list_Allievi_noAccento(int idpr, int gruppo) {
         List<Utenti> out = new ArrayList<>();
         try {
-            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE idprogetti_formativi = " + idpr + " AND gruppo_faseB = " + gruppo;
-            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                while (rs.next()) {
-                    Utenti u = new Utenti(rs.getInt("idallievi"),
-                            stripAccents(rs.getString("cognome").toUpperCase()).trim(),
-                            stripAccents(rs.getString("nome").toUpperCase()).trim(),
-                            rs.getString("codicefiscale").toUpperCase(), "DISCENTE",
-                            rs.getString("email").toLowerCase(),
-                            rs.getString("gruppo_faseB"));
-                    out.add(u);
+            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE id_statopartecipazione IN ('15','18') AND idprogetti_formativi = ? AND gruppo_faseB = ?";
+            try (PreparedStatement ps = this.c.prepareStatement(sql)) {
+                ps.setInt(1, idpr);
+                ps.setInt(2, gruppo);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Utenti u = new Utenti(rs.getInt("idallievi"),
+                                stripAccents(rs.getString("cognome").toUpperCase()).trim(),
+                                stripAccents(rs.getString("nome").toUpperCase()).trim(),
+                                rs.getString("codicefiscale").toUpperCase(), "ALLIEVO",
+                                rs.getString("email").toLowerCase(), rs.getString("gruppo_faseB"));
+                        out.add(u);
+                    }
                 }
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
-
     public List<Utenti> list_Allievi(int idpr) {
         List<Utenti> out = new ArrayList<>();
         try {
-            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE idprogetti_formativi = " + idpr;
-            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                while (rs.next()) {
-                    Utenti u = new Utenti(rs.getInt("idallievi"),
-                            (rs.getString("cognome").toUpperCase().trim()),
-                            (rs.getString("nome").toUpperCase().trim()),
-                            rs.getString("codicefiscale").toUpperCase(), "DISCENTE",
-                            rs.getString("email").toLowerCase(),
-                            rs.getString("gruppo_faseB"));
-                    out.add(u);
+            String sql = "SELECT idallievi,nome,cognome,codicefiscale,email,gruppo_faseB FROM allievi WHERE id_statopartecipazione IN ('15','18') AND idprogetti_formativi = ?";
+            try (PreparedStatement ps = this.c.prepareStatement(sql)) {
+                ps.setInt(1, idpr);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Utenti u = new Utenti(rs.getInt("idallievi"),
+                                (rs.getString("cognome").toUpperCase().trim()),
+                                (rs.getString("nome").toUpperCase().trim()),
+                                rs.getString("codicefiscale").toUpperCase(), "ALLIEVO",
+                                rs.getString("email").toLowerCase(), rs.getString("gruppo_faseB"));
+                        out.add(u);
+                    }
                 }
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -641,19 +668,22 @@ public class Db_Accr {
         List<Utenti> out = new ArrayList<>();
         try {
             String sql = "SELECT iddocenti,nome,cognome,codicefiscale,email FROM docenti WHERE iddocenti IN "
-                    + "(SELECT iddocenti FROM progetti_docenti WHERE idprogetti_formativi = " + idpr + ")";
-            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                while (rs.next()) {
-                    Utenti u = new Utenti(rs.getInt("iddocenti"),
-                            (rs.getString("cognome").toUpperCase().trim()),
-                            (rs.getString("nome").toUpperCase().trim()),
-                            rs.getString("codicefiscale").toUpperCase(), "DOCENTE",
-                            rs.getString("email").toLowerCase(),"1");
-                    out.add(u);
+                    + "(SELECT iddocenti FROM progetti_docenti WHERE idprogetti_formativi = ?)";
+            try (PreparedStatement ps = this.c.prepareStatement(sql)) {
+                ps.setInt(1, idpr);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Utenti u = new Utenti(rs.getInt("iddocenti"),
+                                (rs.getString("cognome").toUpperCase().trim()),
+                                (rs.getString("nome").toUpperCase().trim()),
+                                rs.getString("codicefiscale").toUpperCase(), "DOCENTE",
+                                rs.getString("email").toLowerCase(), "1");
+                        out.add(u);
+                    }
                 }
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -662,19 +692,22 @@ public class Db_Accr {
         List<Utenti> out = new ArrayList<>();
         try {
             String sql = "SELECT iddocenti,nome,cognome,codicefiscale,email FROM docenti WHERE iddocenti IN "
-                    + "(SELECT iddocenti FROM progetti_docenti WHERE idprogetti_formativi = " + idpr + ")";
-            try (Statement st = this.c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                while (rs.next()) {
-                    Utenti u = new Utenti(rs.getInt("iddocenti"),
-                            stripAccents(rs.getString("cognome").toUpperCase().trim()),
-                            stripAccents(rs.getString("nome").toUpperCase().trim()),
-                            rs.getString("codicefiscale").toUpperCase(), "DOCENTE",
-                            rs.getString("email").toLowerCase(),"1");
-                    out.add(u);
+                    + "(SELECT iddocenti FROM progetti_docenti WHERE idprogetti_formativi = ?)";
+            try (PreparedStatement ps = this.c.prepareStatement(sql)) {
+                ps.setInt(1, idpr);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Utenti u = new Utenti(rs.getInt("iddocenti"),
+                                stripAccents(rs.getString("cognome").toUpperCase().trim()),
+                                stripAccents(rs.getString("nome").toUpperCase().trim()),
+                                rs.getString("codicefiscale").toUpperCase(), "DOCENTE",
+                                rs.getString("email").toLowerCase(), "1");
+                        out.add(u);
+                    }
                 }
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            log.severe(estraiEccezione(ex));
         }
         return out;
     }
@@ -682,22 +715,28 @@ public class Db_Accr {
     public String[] sa_cip(int idpr) {
         try {
 
-            String sql0 = "SELECT cip,idsoggetti_attuatori FROM progetti_formativi WHERE idprogetti_formativi = " + idpr;
-            try (Statement st0 = this.c.createStatement(); ResultSet rs0 = st0.executeQuery(sql0)) {
-                if (rs0.next()) {
-                    String cip = rs0.getString(1);
-                    String sql1 = "SELECT ragionesociale FROM soggetti_attuatori WHERE idsoggetti_attuatori = " + rs0.getInt(2);
-                    try (Statement st1 = this.c.createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
-                        if (rs1.next()) {
-                            String[] out = {rs1.getString(1).trim().toUpperCase(), cip, rs0.getString(2)};
-                            return out;
+            String sql0 = "SELECT cip,idsoggetti_attuatori FROM progetti_formativi WHERE idprogetti_formativi = ?";
+            try (PreparedStatement ps = this.c.prepareStatement(sql0)) {
+                ps.setInt(1, idpr);
+                try (ResultSet rs0 = ps.executeQuery()) {
+                    if (rs0.next()) {
+                        String cip = rs0.getString(1);
+                        String sql1 = "SELECT ragionesociale FROM soggetti_attuatori WHERE idsoggetti_attuatori = ?";
+                        try (PreparedStatement ps1 = this.c.prepareStatement(sql1)) {
+                            ps1.setInt(1, rs0.getInt(2));
+                            try (ResultSet rs1 = ps1.executeQuery()) {
+                                if (rs1.next()) {
+                                    String[] out = {rs1.getString(1).trim().toUpperCase(), cip, rs0.getString(2)};
+                                    return out;
+                                }
+                            }
                         }
-                    }
 
+                    }
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.severe(estraiEccezione(ex));
         }
 
         return null;

@@ -37,6 +37,7 @@ import static rc.soop.exe.Utils.patternSql;
 import static rc.soop.exe.Utils.setCell;
 import static rc.soop.exe.Utils.timestamp;
 import static rc.soop.exe.Utils.timestampSQL;
+import static rc.soop.gestione.Constant.createFile;
 
 /**
  *
@@ -66,60 +67,48 @@ public class Engine {
                     d1.setDataconsegna(rs1.getString("datainvio"));
                     d1.setStato(rs1.getString("stato"));
                     boolean ok = false;
-                    String sql2 = "SELECT * FROM usersvalori WHERE username= '" + rs1.getString("username") + "'";
-                    try (Statement st2 = db1.getConnection().createStatement(); ResultSet rs2 = st2.executeQuery(sql2)) {
-                        while (rs2.next()) {
-                            ok = true;
-                            String nomecampo = rs2.getString("campo");
-                            String valorecampo = rs2.getString("valore").toUpperCase().trim();
-                            switch (nomecampo) {
-                                case "nome":
-                                    d1.setNome(valorecampo);
-                                    break;
-                                case "cognome":
-                                    d1.setCognome(valorecampo);
-                                    break;
-                                case "cfuser":
-                                    d1.setCodiceFiscale(valorecampo);
-                                    break;
-                                case "pec":
-                                    d1.setPEC(valorecampo.toLowerCase());
-                                    break;
-                                case "societa":
-                                    d1.setRagioneSociale(valorecampo);
-                                    break;
-                                case "piva":
-                                    d1.setPartitaIVA(valorecampo);
-                                    break;
-                                case "sedecomune":
-                                    d1.setSedeComune(valorecampo);
-                                    break;
-                                case "sedecap":
-                                    d1.setSedeCap(valorecampo);
-                                    break;
-                                case "cell":
-                                    d1.setCellulare(valorecampo);
-                                    break;
-                                case "data":
-                                    d1.setDataNascita(valorecampo);
-                                    break;
-                                case "email":
-                                    d1.setEmail(valorecampo);
-                                    break;
-                                case "sedeindirizzo":
-                                    d1.setSedeIndirizzo(valorecampo);
-                                    break;
-                                case "docric1":
-                                    d1.setNumeroDocumento(valorecampo);
-                                    break;
-                                case "datasc1":
-                                    d1.setScadenzaDoc(valorecampo);
-                                    break;
-                                case "caricasoc":
-                                    d1.setCaricaSoc(valorecampo);
-                                    break;
-                                default:
-                                    break;
+                    String sql2 = "SELECT * FROM usersvalori WHERE username = ?";
+                    try (PreparedStatement ps2 = db1.getConnection().prepareStatement(sql2)) {
+                        ps2.setString(1, rs1.getString("username"));
+                        try (ResultSet rs2 = ps2.executeQuery(sql2)) {
+                            while (rs2.next()) {
+                                ok = true;
+                                String nomecampo = rs2.getString("campo");
+                                String valorecampo = rs2.getString("valore").toUpperCase().trim();
+                                switch (nomecampo) {
+                                    case "nome" ->
+                                        d1.setNome(valorecampo);
+                                    case "cognome" ->
+                                        d1.setCognome(valorecampo);
+                                    case "cfuser" ->
+                                        d1.setCodiceFiscale(valorecampo);
+                                    case "pec" ->
+                                        d1.setPEC(valorecampo.toLowerCase());
+                                    case "societa" ->
+                                        d1.setRagioneSociale(valorecampo);
+                                    case "piva" ->
+                                        d1.setPartitaIVA(valorecampo);
+                                    case "sedecomune" ->
+                                        d1.setSedeComune(valorecampo);
+                                    case "sedecap" ->
+                                        d1.setSedeCap(valorecampo);
+                                    case "cell" ->
+                                        d1.setCellulare(valorecampo);
+                                    case "data" ->
+                                        d1.setDataNascita(valorecampo);
+                                    case "email" ->
+                                        d1.setEmail(valorecampo);
+                                    case "sedeindirizzo" ->
+                                        d1.setSedeIndirizzo(valorecampo);
+                                    case "docric1" ->
+                                        d1.setNumeroDocumento(valorecampo);
+                                    case "datasc1" ->
+                                        d1.setScadenzaDoc(valorecampo);
+                                    case "caricasoc" ->
+                                        d1.setCaricaSoc(valorecampo);
+                                    default -> {
+                                    }
+                                }
                             }
                         }
                     }
@@ -171,51 +160,48 @@ public class Engine {
                 while (rs1.next()) {
                     Domande d1 = new Domande();
                     boolean ok = false;
-                    String sql2 = "SELECT * FROM usersvalori WHERE username= '" + rs1.getString("username") + "'";
-                    try (Statement st2 = db1.getConnection().createStatement(); ResultSet rs2 = st2.executeQuery(sql2)) {
-                        while (rs2.next()) {
-                            ok = true;
-                            String nomecampo = rs2.getString("campo");
-                            String valorecampo = rs2.getString("valore").toUpperCase().trim();
-                            switch (nomecampo) {
-                                case "sedecomune":
-                                    d1.setSedeComune(valorecampo);
-                                    break;
-                                case "sedecap":
-                                    d1.setSedeCap(valorecampo);
-                                    break;
-                                case "cell":
-                                    d1.setCellulare(valorecampo);
-                                    break;
-                                case "data":
-                                    d1.setDataNascita(valorecampo);
-                                    break;
-                                case "email":
-                                    d1.setEmail(valorecampo);
-                                    break;
-                                case "sedeindirizzo":
-                                    d1.setSedeIndirizzo(valorecampo);
-                                    break;
-                                case "docric1":
-                                    d1.setNumeroDocumento(valorecampo);
-                                    break;
-                                case "datasc1":
-                                    d1.setScadenzaDoc(valorecampo);
-                                    break;
-                                case "caricasoc":
-                                    d1.setCaricaSoc(valorecampo);
-                                    break;
-                                default:
-                                    break;
+                    String sql2 = "SELECT * FROM usersvalori WHERE username = ?";
+                    try (PreparedStatement ps2 = db1.getConnection().prepareStatement(sql2)) {
+                        ps2.setString(1, rs1.getString("username"));
+                        try (ResultSet rs2 = ps2.executeQuery(sql2)) {
+                            while (rs2.next()) {
+                                ok = true;
+                                String nomecampo = rs2.getString("campo");
+                                String valorecampo = rs2.getString("valore").toUpperCase().trim();
+                                switch (nomecampo) {
+                                    case "sedecomune" ->
+                                        d1.setSedeComune(valorecampo);
+                                    case "sedecap" ->
+                                        d1.setSedeCap(valorecampo);
+                                    case "cell" ->
+                                        d1.setCellulare(valorecampo);
+                                    case "data" ->
+                                        d1.setDataNascita(valorecampo);
+                                    case "email" ->
+                                        d1.setEmail(valorecampo);
+                                    case "sedeindirizzo" ->
+                                        d1.setSedeIndirizzo(valorecampo);
+                                    case "docric1" ->
+                                        d1.setNumeroDocumento(valorecampo);
+                                    case "datasc1" ->
+                                        d1.setScadenzaDoc(valorecampo);
+                                    case "caricasoc" ->
+                                        d1.setCaricaSoc(valorecampo);
+                                    default -> {
+                                    }
+                                }
                             }
                         }
                     }
                     d1.setAccreditato("");
                     if (ok) {
-                        String sql3 = "SELECT * FROM allegato_a WHERE username= '" + rs1.getString("username") + "'";
-                        try (Statement st3 = db1.getConnection().createStatement(); ResultSet rs3 = st3.executeQuery(sql3)) {
-                            if (rs3.next()) {
-                                d1.setAccreditato(rs3.getString("iscrizione"));
+                        String sql3 = "SELECT * FROM allegato_a WHERE username = ?";
+                        try (PreparedStatement ps3 = db1.getConnection().prepareStatement(sql3)) {
+                            ps3.setString(1, rs1.getString("username"));
+                            try (ResultSet rs3 = ps3.executeQuery(sql2)) {
+                                if (rs3.next()) {
+                                    d1.setAccreditato(rs3.getString("iscrizione"));
+                                }
                             }
                         }
 
@@ -251,19 +237,22 @@ public class Engine {
             String sql1 = "SELECT a.username FROM bando_toscana_mcn a WHERE a.dataupconvenzionefinale ='-'";
             try (Statement st1 = db1.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql1);) {
                 while (rs1.next()) {
-                    String sql2 = "SELECT timestamp FROM convenzioniroma WHERE username = '" + rs1.getString("a.username") + "' ORDER BY timestamp DESC LIMIT 1";
-                    try (Statement st2 = db1.getConnection().createStatement(); ResultSet rs2 = st2.executeQuery(sql2);) {
-                        if (rs2.next()) {
-                            String data = formatStringtoStringDate(rs2.getString(1), timestampSQL, patternITA, true);
-                            if (!data.equals("DATA ERRATA")) {
-                                String upd = "UPDATE bando_toscana_mcn SET dataupconvenzionefinale = ? where username = ?";
-                                try (PreparedStatement ps1 = db1.getConnection().prepareStatement(upd)) {
-                                    ps1.setString(1, data);
-                                    ps1.setString(2, rs1.getString("a.username"));
-                                    ps1.executeUpdate();
+                    String sql2 = "SELECT timestamp FROM convenzioniroma WHERE username = ? ORDER BY timestamp DESC LIMIT 1";
+                    try (PreparedStatement ps2 = db1.getConnection().prepareStatement(sql2)) {
+                        ps2.setString(1, rs1.getString("a.username"));
+                        try (ResultSet rs2 = ps2.executeQuery(sql2)) {
+                            if (rs2.next()) {
+                                String data = formatStringtoStringDate(rs2.getString(1), timestampSQL, patternITA, true);
+                                if (!data.equals("DATA ERRATA")) {
+                                    String upd = "UPDATE bando_toscana_mcn SET dataupconvenzionefinale = ? where username = ?";
+                                    try (PreparedStatement ps1 = db1.getConnection().prepareStatement(upd)) {
+                                        ps1.setString(1, data);
+                                        ps1.setString(2, rs1.getString("a.username"));
+                                        ps1.executeUpdate();
+                                    }
+                                } else {
+                                    log.log(Level.SEVERE, "DATA ERRATA: {0}", rs1.getString("a.username"));
                                 }
-                            } else {
-                                log.log(Level.SEVERE, "DATA ERRATA: {0}", rs1.getString("a.username"));
                             }
                         }
                     }
@@ -300,13 +289,21 @@ public class Engine {
                 }
             }
 
-            String upd0 = "UPDATE reportistica SET valore = '" + count_dc0.get() + "' WHERE codice = 'dc0'";
-            String upd1 = "UPDATE reportistica SET valore = '" + count_dc1.get() + "' WHERE codice = 'dc1'";
-            String upd2 = "UPDATE reportistica SET valore = '" + count_dc2.get() + "' WHERE codice = 'dc2'";
-            try (Statement st2 = db1.getConnection().createStatement()) {
-                st2.executeUpdate(upd0);
-                st2.executeUpdate(upd1);
-                st2.executeUpdate(upd2);
+            String upd0 = "UPDATE reportistica SET valore = ? WHERE codice = 'dc0'";
+            try (PreparedStatement ps2 = db1.getConnection().prepareStatement(upd0)) {
+                ps2.setInt(1, count_dc0.get());
+                ps2.executeUpdate();
+            }
+
+            String upd1 = "UPDATE reportistica SET valore = ? WHERE codice = 'dc1'";
+            try (PreparedStatement ps2 = db1.getConnection().prepareStatement(upd1)) {
+                ps2.setInt(1, count_dc1.get());
+                ps2.executeUpdate();
+            }
+            String upd2 = "UPDATE reportistica SET valore = ? WHERE codice = 'dc2'";
+            try (PreparedStatement ps2 = db1.getConnection().prepareStatement(upd2)) {
+                ps2.setInt(1, count_dc2.get());
+                ps2.executeUpdate();
             }
         } catch (Exception e) {
             log.severe(estraiEccezione(e));
@@ -505,7 +502,7 @@ public class Engine {
                 sq1 = dt1.toString(patternSql);
                 sq2 = dt1.toString(timestampSQL);
                 createDir(pathTemp);
-                output = new File(pathTemp + "Domande_consegnate_" + ts + ".xlsx");
+                output = createFile(pathTemp + "Domande_consegnate_" + ts + ".xlsx");
                 try (FileOutputStream fos = new FileOutputStream(output)) {
                     wb.write(fos);
                 }
@@ -517,9 +514,7 @@ public class Engine {
                     sq2);
             db1.closeDB();
             output.delete();
-//            System.out.println("rc.soop.accreditamento.Engine.crea_report() " + output.getPath());
         } catch (Exception e) {
-            e.printStackTrace();
             log.severe(estraiEccezione(e));
         }
     }

@@ -7,6 +7,7 @@ package rc.soop.gestione;
 
 import com.google.common.base.Splitter;
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -257,24 +258,30 @@ public class Create {
                     long millischeck1 = nuova_rendicontazione_ore(doc1.getMillistotaleore());
 
                     String sqloredocente = "SELECT l1.ore FROM lezioni_modelli l, lezione_calendario l1, docenti d1"
-                            + " WHERE l1.id_lezionecalendario=l.id_lezionecalendario AND l.id_modelli_progetto=" + cal.getMpid_modello()
-                            + " AND l.giorno='" + cal.getGiorno() + "'"
-                            + " AND l.id_docente=d1.iddocenti AND d1.email='" + doc1.getEmail() + "';";
+                            + " WHERE l1.id_lezionecalendario=l.id_lezionecalendario AND l.id_modelli_progetto = ? "
+                            + " AND l.giorno = ? AND l.id_docente=d1.iddocenti AND d1.email = ?";
 
                     if (cal.getCodiceud().startsWith("B") && cal.getGruppo() > 0) {
                         sqloredocente = "SELECT l1.ore FROM lezioni_modelli l, lezione_calendario l1, docenti d1"
-                                + " WHERE l1.id_lezionecalendario=l.id_lezionecalendario AND l.id_modelli_progetto=" + cal.getMpid_modello()
-                                + " AND l.giorno='" + cal.getGiorno() + "' AND l.gruppo_faseB = " + cal.getGruppo()
-                                + " AND l.id_docente=d1.iddocenti AND d1.email='" + doc1.getEmail() + "';";
+                                + " WHERE l1.id_lezionecalendario=l.id_lezionecalendario AND l.id_modelli_progetto =? "
+                                + " AND l.giorno = ? AND l.id_docente=d1.iddocenti AND d1.email = ? AND l.gruppo_faseB = ?";
                     }
-                    
+
                     long oredocente = 0;
 
                     Db_Gest db0 = new Db_Gest(host);
 
-                    try (Statement st1 = db0.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sqloredocente)) {
-                        while (rs1.next()) {
-                            oredocente += convertHours(rs1.getString(1));
+                    try (PreparedStatement ps1 = db0.getConnection().prepareStatement(sqloredocente)) {
+                        ps1.setInt(1, cal.getMpid_modello());
+                        ps1.setString(2, cal.getGiorno());
+                        ps1.setString(3, doc1.getEmail());
+                        if (cal.getCodiceud().startsWith("B") && cal.getGruppo() > 0) {
+                            ps1.setInt(4, cal.getGruppo());
+                        }
+                        try (ResultSet rs1 = ps1.executeQuery()) {
+                            while (rs1.next()) {
+                                oredocente += convertHours(rs1.getString(1));
+                            }
                         }
                     }
                     db0.closeDB();
@@ -306,7 +313,7 @@ public class Create {
             log.severe(estraiEccezione(e));
         }
     }
-    
+
 //    public static long nuova_rendicontazione_ore(long millis, int idpr, String host) {
 //        try {
 //            Db_Gest db0 = new Db_Gest(host);
@@ -321,7 +328,6 @@ public class Create {
 //        }
 //        return millis;
 //    }
-
     public static long nuova_rendicontazione_ore(long millis) { //2024
         try {
             long ora = 3600000L;
@@ -337,5 +343,5 @@ public class Create {
         }
         return millis;
     }
-    
+
 }

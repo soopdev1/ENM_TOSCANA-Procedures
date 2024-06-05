@@ -44,6 +44,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import static rc.soop.exe.Utils.calcolaintervallomillis;
 import static rc.soop.exe.Utils.createDir;
+import static rc.soop.exe.Utils.estraiEccezione;
 import static rc.soop.exe.Utils.formatStringtoStringDateSQL;
 import static rc.soop.exe.Utils.patternITA;
 import static rc.soop.exe.Utils.patternid;
@@ -52,6 +53,7 @@ import static rc.soop.exe.Utils.timestampITAcomplete;
 import static rc.soop.gestione.Constant.calcoladurata;
 import static rc.soop.gestione.Constant.checkPDF;
 import static rc.soop.gestione.Constant.convertPDFA;
+import static rc.soop.gestione.Constant.createFile;
 import static rc.soop.gestione.Constant.printbarcode;
 import static rc.soop.gestione.Toscana_gestione.log;
 
@@ -93,8 +95,14 @@ public class Complessivo {
             Style normal = new Style();
             normal.setFont(fontnormal).setFontSize(10);
 
-//CREA PDF REPORT
-            File out0 = new File(pathtemp + now0 + "reportcomplessivo_" + idpr + ".pdf");
+            //CREA PDF REPORT
+            File out0 = createFile(pathtemp + now0 + "reportcomplessivo_" + idpr + ".pdf");
+//            File out0 = new File(pathtemp + now0 + "reportcomplessivo_" + idpr + ".pdf");
+
+            if (out0 == null) {
+                return null;
+            }
+
             PdfWriter pw0 = new PdfWriter(out0);
             pw0.setCompressionLevel(9);
             pw0.setSmartMode(true);
@@ -105,117 +113,121 @@ public class Complessivo {
 
             fa.forEach(
                     cal -> {
-
                         List<Registro_completo> registro = new ArrayList<>();
-
                         try {
                             String day = cal.getGiorno();
-
                             if (cal.getNomestanza() != null) {
-                                String sql = "SELECT * FROM registro_completo WHERE idprogetti_formativi = " + idpr + " AND data = '" + day
-                                + "' AND fase='A' ORDER BY ruolo DESC,cognome ASC,nome ASC";
-                                try (Statement st = db1.getConnection().createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                                    while (rs.next()) {
-                                        Registro_completo rc = new Registro_completo(
-                                                rs.getInt(1),
-                                                rs.getInt(2),
-                                                rs.getInt(3),
-                                                rs.getString(4),
-                                                new DateTime(rs.getDate(5).getTime()),
-                                                rs.getString(6),
-                                                rs.getInt(7),
-                                                rs.getString(8),
-                                                rs.getString(9),
-                                                rs.getLong(10),
-                                                rs.getString(11),
-                                                rs.getString(12),
-                                                rs.getInt(13),
-                                                rs.getString(14),
-                                                rs.getString(15),
-                                                rs.getString(16),
-                                                rs.getString(17),
-                                                rs.getString(18),
-                                                rs.getString(19),
-                                                rs.getLong(20),
-                                                rs.getLong(21),
-                                                rs.getInt(23));
-                                        registro.add(rc);
+                                String sql = "SELECT * FROM registro_completo WHERE idprogetti_formativi = ? AND data = ? AND fase='A' ORDER BY ruolo DESC,cognome ASC,nome ASC";
+                                try (PreparedStatement ps = db1.getConnection().prepareStatement(sql)) {
+                                    ps.setInt(1, idpr);
+                                    ps.setString(2, day);
+                                    try (ResultSet rs = ps.executeQuery()) {
+                                        while (rs.next()) {
+                                            Registro_completo rc = new Registro_completo(
+                                                    rs.getInt(1),
+                                                    rs.getInt(2),
+                                                    rs.getInt(3),
+                                                    rs.getString(4),
+                                                    new DateTime(rs.getDate(5).getTime()),
+                                                    rs.getString(6),
+                                                    rs.getInt(7),
+                                                    rs.getString(8),
+                                                    rs.getString(9),
+                                                    rs.getLong(10),
+                                                    rs.getString(11),
+                                                    rs.getString(12),
+                                                    rs.getInt(13),
+                                                    rs.getString(14),
+                                                    rs.getString(15),
+                                                    rs.getString(16),
+                                                    rs.getString(17),
+                                                    rs.getString(18),
+                                                    rs.getString(19),
+                                                    rs.getLong(20),
+                                                    rs.getLong(21),
+                                                    rs.getInt(23));
+                                            registro.add(rc);
+                                        }
                                     }
                                 }
                             } else {
                                 String sql1 = "SELECT * FROM presenzelezioni p, progetti_formativi f, lezioni_modelli lm, lezione_calendario lc , docenti d "
                                 + " WHERE d.iddocenti=p.iddocente AND lc.id_lezionecalendario=lm.id_lezionecalendario AND lm.id_lezionimodelli=p.idlezioneriferimento AND "
-                                + " p.idprogetto=f.idprogetti_formativi AND p.idprogetto = " + idpr + " AND p.datalezione LIKE '" + day + "%' ORDER BY p.orainizio;";
+                                + " p.idprogetto=f.idprogetti_formativi AND p.idprogetto = ? AND p.datalezione LIKE ? ORDER BY p.orainizio;";
 
-                                try (Statement st1 = db1.getConnection().createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY); ResultSet rs1 = st1.executeQuery(sql1)) {
-                                    while (rs1.next()) {
-                                        String sql2 = "SELECT * FROM presenzelezioniallievi a, allievi l WHERE a.idallievi=l.idallievi AND a.idpresenzelezioni = "
-                                        + rs1.getInt("p.idpresenzelezioni")
-                                        + " AND a.convalidata = 1 GROUP BY l.idallievi";
+                                try (PreparedStatement ps1 = db1.getConnection().prepareStatement(sql1, TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY)) {
+                                    ps1.setInt(1, idpr);
+                                    ps1.setString(2, day + "%");
+                                    try (ResultSet rs1 = ps1.executeQuery()) {
+                                        while (rs1.next()) {
+                                            String sql2 = "SELECT * FROM presenzelezioniallievi a, allievi l WHERE a.idallievi=l.idallievi AND a.idpresenzelezioni = ? AND a.convalidata = 1 GROUP BY l.idallievi";
 
-                                        try (Statement st2 = db1.getConnection().createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY); ResultSet rs2 = st2.executeQuery(sql2)) {
+                                            try (PreparedStatement ps2 = db1.getConnection().prepareStatement(sql2, TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY)) {
+                                                ps2.setInt(1, rs1.getInt("p.idpresenzelezioni"));
+                                                try (ResultSet rs2 = ps2.executeQuery()) {
+                                                    int numpartecipanti = 1;
+                                                    while (rs2.next()) {
+                                                        numpartecipanti++;
+                                                    }
+                                                    rs2.beforeFirst();
 
-                                            int numpartecipanti = 1;
-                                            while (rs2.next()) {
-                                                numpartecipanti++;
-                                            }
-                                            rs2.beforeFirst();
+                                                    long durata = calcolaintervallomillis(rs1.getString("p.orainizio"), rs1.getString("p.orafine"));
 
-                                            long durata = calcolaintervallomillis(rs1.getString("p.orainizio"), rs1.getString("p.orafine"));
+                                                    Registro_completo docente = new Registro_completo(0,
+                                                            idpr,
+                                                            rs1.getInt("f.idsoggetti_attuatori"),
+                                                            rs1.getString("f.cip"),
+                                                            new DateTime(rs1.getDate("p.datalezione").getTime()),
+                                                            rs1.getString("f.cip") + "_A_" + rs1.getString("lc.codice_ud") + "_" + StringUtils.replace(rs1.getString("p.datalezione"), "-", ""),
+                                                            numpartecipanti,
+                                                            rs1.getString("p.orainizio"),
+                                                            rs1.getString("p.orafine"),
+                                                            durata,
+                                                            rs1.getString("lc.codice_ud"),
+                                                            "A",
+                                                            0,
+                                                            "DOCENTE",
+                                                            rs1.getString("d.cognome"),
+                                                            rs1.getString("d.nome"),
+                                                            rs1.getString("d.email"),
+                                                            rs1.getString("p.orainizio"),
+                                                            rs1.getString("p.orafine"),
+                                                            durata,
+                                                            durata,
+                                                            rs1.getInt("d.iddocenti"));
+                                                    registro.add(docente);
 
-                                            Registro_completo docente = new Registro_completo(0,
-                                                    idpr,
-                                                    rs1.getInt("f.idsoggetti_attuatori"),
-                                                    rs1.getString("f.cip"),
-                                                    new DateTime(rs1.getDate("p.datalezione").getTime()),
-                                                    rs1.getString("f.cip") + "_A_" + rs1.getString("lc.codice_ud") + "_" + StringUtils.replace(rs1.getString("p.datalezione"), "-", ""),
-                                                    numpartecipanti,
-                                                    rs1.getString("p.orainizio"),
-                                                    rs1.getString("p.orafine"),
-                                                    durata,
-                                                    rs1.getString("lc.codice_ud"),
-                                                    "A",
-                                                    0,
-                                                    "DOCENTE",
-                                                    rs1.getString("d.cognome"),
-                                                    rs1.getString("d.nome"),
-                                                    rs1.getString("d.email"),
-                                                    rs1.getString("p.orainizio"),
-                                                    rs1.getString("p.orafine"),
-                                                    durata,
-                                                    durata,
-                                                    rs1.getInt("d.iddocenti"));
-                                            registro.add(docente);
-
-                                            while (rs2.next()) {
-                                                Registro_completo rc = new Registro_completo(0,
-                                                        idpr,
-                                                        rs1.getInt("f.idsoggetti_attuatori"),
-                                                        rs1.getString("f.cip"),
-                                                        new DateTime(rs1.getDate("p.datalezione").getTime()),
-                                                        rs1.getString("f.cip") + "_A_" + rs1.getString("lc.codice_ud") + "_" + StringUtils.replace(rs1.getString("p.datalezione"), "-", ""),
-                                                        numpartecipanti,
-                                                        rs1.getString("p.orainizio"),
-                                                        rs1.getString("p.orafine"),
-                                                        calcolaintervallomillis(rs1.getString("p.orainizio"), rs1.getString("p.orafine")),
-                                                        rs1.getString("lc.codice_ud"),
-                                                        "A",
-                                                        0,
-                                                        "ALLIEVO",
-                                                        rs2.getString("l.cognome"),
-                                                        rs2.getString("l.nome"),
-                                                        rs2.getString("l.email"),
-                                                        rs2.getString("a.orainizio"),
-                                                        rs2.getString("a.orafine"),
-                                                        rs2.getLong("a.durata"),
-                                                        rs2.getLong("a.durataconvalidata"),
-                                                        rs2.getInt("l.idallievi"));
-                                                registro.add(rc);
+                                                    while (rs2.next()) {
+                                                        Registro_completo rc = new Registro_completo(0,
+                                                                idpr,
+                                                                rs1.getInt("f.idsoggetti_attuatori"),
+                                                                rs1.getString("f.cip"),
+                                                                new DateTime(rs1.getDate("p.datalezione").getTime()),
+                                                                rs1.getString("f.cip") + "_A_" + rs1.getString("lc.codice_ud") + "_" + StringUtils.replace(rs1.getString("p.datalezione"), "-", ""),
+                                                                numpartecipanti,
+                                                                rs1.getString("p.orainizio"),
+                                                                rs1.getString("p.orafine"),
+                                                                calcolaintervallomillis(rs1.getString("p.orainizio"), rs1.getString("p.orafine")),
+                                                                rs1.getString("lc.codice_ud"),
+                                                                "A",
+                                                                0,
+                                                                "ALLIEVO",
+                                                                rs2.getString("l.cognome"),
+                                                                rs2.getString("l.nome"),
+                                                                rs2.getString("l.email"),
+                                                                rs2.getString("a.orainizio"),
+                                                                rs2.getString("a.orafine"),
+                                                                rs2.getLong("a.durata"),
+                                                                rs2.getLong("a.durataconvalidata"),
+                                                                rs2.getInt("l.idallievi"));
+                                                        registro.add(rc);
+                                                    }
+                                                }
                                             }
                                         }
                                     }
-                                }
 
+                                }
                             }
 
                             if (!registro.isEmpty()) {
@@ -644,84 +656,65 @@ public class Complessivo {
                     String day = cal.getGiorno();
 
                     if (cal.getNomestanza() != null) {
-                        String sql = "SELECT * FROM registro_completo WHERE idprogetti_formativi = " + idpr + " AND data = '" + day
-                                + "' AND fase='B' AND gruppofaseb = '" + cal.getGruppo() + "' ORDER BY ruolo DESC,cognome ASC,nome ASC";
-                        try (Statement st = db1.getConnection().createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                            while (rs.next()) {
-                                Registro_completo rc = new Registro_completo(
-                                        rs.getInt(1),
-                                        rs.getInt(2),
-                                        rs.getInt(3),
-                                        rs.getString(4),
-                                        new DateTime(rs.getDate(5).getTime()),
-                                        rs.getString(6),
-                                        rs.getInt(7),
-                                        rs.getString(8),
-                                        rs.getString(9),
-                                        rs.getLong(10),
-                                        rs.getString(11),
-                                        rs.getString(12),
-                                        rs.getInt(13),
-                                        rs.getString(14),
-                                        rs.getString(15),
-                                        rs.getString(16),
-                                        rs.getString(17),
-                                        rs.getString(18),
-                                        rs.getString(19),
-                                        rs.getLong(20),
-                                        rs.getLong(21),
-                                        rs.getInt(23));
-                                registro.add(rc);
+                        String sql = "SELECT * FROM registro_completo WHERE idprogetti_formativi = ? AND data = ? AND fase='B' AND gruppofaseb = ? ORDER BY ruolo DESC,cognome ASC,nome ASC";
+                        try (PreparedStatement ps = db1.getConnection().prepareStatement(sql)) {
+                            ps.setInt(1, idpr);
+                            ps.setString(2, day);
+                            ps.setInt(3, cal.getGruppo());
+                            try (ResultSet rs = ps.executeQuery()) {
+                                while (rs.next()) {
+                                    Registro_completo rc = new Registro_completo(
+                                            rs.getInt(1),
+                                            rs.getInt(2),
+                                            rs.getInt(3),
+                                            rs.getString(4),
+                                            new DateTime(rs.getDate(5).getTime()),
+                                            rs.getString(6),
+                                            rs.getInt(7),
+                                            rs.getString(8),
+                                            rs.getString(9),
+                                            rs.getLong(10),
+                                            rs.getString(11),
+                                            rs.getString(12),
+                                            rs.getInt(13),
+                                            rs.getString(14),
+                                            rs.getString(15),
+                                            rs.getString(16),
+                                            rs.getString(17),
+                                            rs.getString(18),
+                                            rs.getString(19),
+                                            rs.getLong(20),
+                                            rs.getLong(21),
+                                            rs.getInt(23));
+                                    registro.add(rc);
+                                }
                             }
                         }
                     } else {
                         String sql1 = "SELECT * FROM presenzelezioni p, progetti_formativi f, lezioni_modelli lm, lezione_calendario lc , docenti d "
                                 + " WHERE d.iddocenti=p.iddocente AND lc.id_lezionecalendario=lm.id_lezionecalendario AND lm.id_lezionimodelli=p.idlezioneriferimento AND "
-                                + " p.idprogetto=f.idprogetti_formativi AND p.idprogetto = " + idpr + " AND p.datalezione LIKE '" + day 
-                                + "%' AND lm.gruppo_faseB = " + cal.getGruppo() + " ORDER BY p.orainizio;";
+                                + " p.idprogetto=f.idprogetti_formativi AND p.idprogetto = ? AND p.datalezione LIKE ? AND lm.gruppo_faseB = ? ORDER BY p.orainizio";
+                        try (PreparedStatement ps1 = db1.getConnection().prepareStatement(sql1, TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY)) {
+                            ps1.setInt(1, idpr);
+                            ps1.setString(2, day + "%");
+                            ps1.setInt(3, cal.getGruppo());
+                            try (ResultSet rs1 = ps1.executeQuery()) {
+                                while (rs1.next()) {
+                                    String sql2 = "SELECT * FROM presenzelezioniallievi a, allievi l WHERE a.idallievi=l.idallievi AND a.idpresenzelezioni = "
+                                            + rs1.getInt("p.idpresenzelezioni")
+                                            + " AND a.convalidata = 1 GROUP BY l.idallievi";
 
-                        try (Statement st1 = db1.getConnection().createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY); ResultSet rs1 = st1.executeQuery(sql1)) {
-                            while (rs1.next()) {
-                                String sql2 = "SELECT * FROM presenzelezioniallievi a, allievi l WHERE a.idallievi=l.idallievi AND a.idpresenzelezioni = "
-                                        + rs1.getInt("p.idpresenzelezioni")
-                                        + " AND a.convalidata = 1 GROUP BY l.idallievi";
+                                    try (Statement st2 = db1.getConnection().createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY); ResultSet rs2 = st2.executeQuery(sql2)) {
 
-                                try (Statement st2 = db1.getConnection().createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY); ResultSet rs2 = st2.executeQuery(sql2)) {
+                                        int numpartecipanti = 1;
+                                        while (rs2.next()) {
+                                            numpartecipanti++;
+                                        }
+                                        rs2.beforeFirst();
 
-                                    int numpartecipanti = 1;
-                                    while (rs2.next()) {
-                                        numpartecipanti++;
-                                    }
-                                    rs2.beforeFirst();
+                                        long durata = calcolaintervallomillis(rs1.getString("p.orainizio"), rs1.getString("p.orafine"));
 
-                                    long durata = calcolaintervallomillis(rs1.getString("p.orainizio"), rs1.getString("p.orafine"));
-
-                                    Registro_completo docente = new Registro_completo(0,
-                                            idpr,
-                                            rs1.getInt("f.idsoggetti_attuatori"),
-                                            rs1.getString("f.cip"),
-                                            new DateTime(rs1.getDate("p.datalezione").getTime()),
-                                            rs1.getString("f.cip") + "_B_" + rs1.getInt("lm.gruppo_faseB") + "_" + rs1.getString("lc.codice_ud") + "_" + StringUtils.replace(rs1.getString("p.datalezione"), "-", ""),
-                                            numpartecipanti,
-                                            rs1.getString("p.orainizio"),
-                                            rs1.getString("p.orafine"),
-                                            durata,
-                                            rs1.getString("lc.codice_ud"),
-                                            "B",
-                                            rs1.getInt("lm.gruppo_faseB"),
-                                            "DOCENTE",
-                                            rs1.getString("d.cognome"),
-                                            rs1.getString("d.nome"),
-                                            rs1.getString("d.email"),
-                                            rs1.getString("p.orainizio"),
-                                            rs1.getString("p.orafine"),
-                                            durata,
-                                            durata,
-                                            rs1.getInt("d.iddocenti"));
-                                    registro.add(docente);
-
-                                    while (rs2.next()) {
-                                        Registro_completo rc = new Registro_completo(0,
+                                        Registro_completo docente = new Registro_completo(0,
                                                 idpr,
                                                 rs1.getInt("f.idsoggetti_attuatori"),
                                                 rs1.getString("f.cip"),
@@ -730,20 +723,46 @@ public class Complessivo {
                                                 numpartecipanti,
                                                 rs1.getString("p.orainizio"),
                                                 rs1.getString("p.orafine"),
-                                                calcolaintervallomillis(rs1.getString("p.orainizio"), rs1.getString("p.orafine")),
+                                                durata,
                                                 rs1.getString("lc.codice_ud"),
                                                 "B",
                                                 rs1.getInt("lm.gruppo_faseB"),
-                                                "ALLIEVO",
-                                                rs2.getString("l.cognome"),
-                                                rs2.getString("l.nome"),
-                                                rs2.getString("l.email"),
-                                                rs2.getString("a.orainizio"),
-                                                rs2.getString("a.orafine"),
-                                                rs2.getLong("a.durata"),
-                                                rs2.getLong("a.durataconvalidata"),
-                                                rs2.getInt("l.idallievi"));
-                                        registro.add(rc);
+                                                "DOCENTE",
+                                                rs1.getString("d.cognome"),
+                                                rs1.getString("d.nome"),
+                                                rs1.getString("d.email"),
+                                                rs1.getString("p.orainizio"),
+                                                rs1.getString("p.orafine"),
+                                                durata,
+                                                durata,
+                                                rs1.getInt("d.iddocenti"));
+                                        registro.add(docente);
+
+                                        while (rs2.next()) {
+                                            Registro_completo rc = new Registro_completo(0,
+                                                    idpr,
+                                                    rs1.getInt("f.idsoggetti_attuatori"),
+                                                    rs1.getString("f.cip"),
+                                                    new DateTime(rs1.getDate("p.datalezione").getTime()),
+                                                    rs1.getString("f.cip") + "_B_" + rs1.getInt("lm.gruppo_faseB") + "_" + rs1.getString("lc.codice_ud") + "_" + StringUtils.replace(rs1.getString("p.datalezione"), "-", ""),
+                                                    numpartecipanti,
+                                                    rs1.getString("p.orainizio"),
+                                                    rs1.getString("p.orafine"),
+                                                    calcolaintervallomillis(rs1.getString("p.orainizio"), rs1.getString("p.orafine")),
+                                                    rs1.getString("lc.codice_ud"),
+                                                    "B",
+                                                    rs1.getInt("lm.gruppo_faseB"),
+                                                    "ALLIEVO",
+                                                    rs2.getString("l.cognome"),
+                                                    rs2.getString("l.nome"),
+                                                    rs2.getString("l.email"),
+                                                    rs2.getString("a.orainizio"),
+                                                    rs2.getString("a.orafine"),
+                                                    rs2.getLong("a.durata"),
+                                                    rs2.getLong("a.durataconvalidata"),
+                                                    rs2.getInt("l.idallievi"));
+                                            registro.add(rc);
+                                        }
                                     }
                                 }
                             }
@@ -1178,26 +1197,34 @@ public class Complessivo {
                     out0.deleteOnExit();
                     out1.deleteOnExit();
                     createDir(path_destinazione);
-                    File pdf_final = new File(path_destinazione + File.separator + "Registro Complessivo_" + now1 + ".pdf");
+                    File pdf_final = createFile(path_destinazione + File.separator + "Registro Complessivo_" + now1 + ".pdf");
+                    if (pdf_final == null) {
+                        return null;
+                    }
                     FileUtils.copyFile(out2, pdf_final);
                     if (checkPDF(pdf_final)) {
                         out2.deleteOnExit();
                         if (save) {
                             Db_Gest db3 = new Db_Gest(host);
-                            String sql = "SELECT iddocumenti_progetti FROM documenti_progetti WHERE idprogetto = " + idpr + " AND tipo = 33";
-                            try (Statement st = db3.getConnection().createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                                if (rs.next()) {
-                                    try (Statement st1 = db3.getConnection().createStatement()) {
-                                        String upd = "UPDATE documenti_progetti SET path = '" + pdf_final.getPath() + "' WHERE iddocumenti_progetti = " + rs.getInt(1);
-                                        st1.executeUpdate(upd);
-                                    }
-                                } else {
-                                    String ins = "INSERT INTO documenti_progetti (path,idprogetto,tipo) VALUES (?,?,?)";
-                                    try (PreparedStatement ps1 = db3.getConnection().prepareStatement(ins)) {
-                                        ps1.setString(1, pdf_final.getPath());
-                                        ps1.setInt(2, idpr);
-                                        ps1.setInt(3, 33);
-                                        ps1.execute();
+                            String sql = "SELECT iddocumenti_progetti FROM documenti_progetti WHERE idprogetto = ? AND tipo = 33";
+                            try (PreparedStatement ps = db3.getConnection().prepareStatement(sql)) {
+                                ps.setInt(1, idpr);
+                                try (ResultSet rs = ps.executeQuery()) {
+                                    if (rs.next()) {
+                                        String upd = "UPDATE documenti_progetti SET path = ? WHERE iddocumenti_progetti = ?";
+                                        try (PreparedStatement ps1 = db3.getConnection().prepareStatement(upd)) {
+                                            ps1.setString(1, pdf_final.getPath());
+                                            ps1.setInt(2, rs.getInt(1));
+                                            ps1.executeUpdate(upd);
+                                        }
+                                    } else {
+                                        String ins = "INSERT INTO documenti_progetti (path,idprogetto,tipo) VALUES (?,?,?)";
+                                        try (PreparedStatement ps1 = db3.getConnection().prepareStatement(ins)) {
+                                            ps1.setString(1, pdf_final.getPath());
+                                            ps1.setInt(2, idpr);
+                                            ps1.setInt(3, 33);
+                                            ps1.execute();
+                                        }
                                     }
                                 }
                             }
@@ -1210,9 +1237,8 @@ public class Complessivo {
 
                 }
             }
-
         } catch (Exception e) {
-            e.printStackTrace();
+            log.severe(estraiEccezione(e));
         }
 
         return null;

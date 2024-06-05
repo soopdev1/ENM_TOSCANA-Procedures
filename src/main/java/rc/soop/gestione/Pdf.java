@@ -30,6 +30,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
 import static java.lang.Math.toRadians;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -116,11 +117,13 @@ public class Pdf {
                     nascita_provincia = rs.getString("c.cod_provincia");
                     NOMESA = rs.getString("s.ragionesociale");
                     if (rs.getString("p.sedefisica") != null) {
-                        String sql1 = "SELECT s.indirizzo,c.nome,c.cod_provincia FROM sedi_formazione s, comuni c WHERE s.idsedi="
-                                + rs.getString("p.sedefisica") + " AND s.comune=c.idcomune";
-                        try (Statement st1 = db0.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
-                            if (rs1.next()) {
-                                SEDE = rs1.getString(1) + " - " + rs1.getString(2) + " (" + rs1.getString(3) + ")";
+                        String sql1 = "SELECT s.indirizzo,c.nome,c.cod_provincia FROM sedi_formazione s, comuni c WHERE s.idsedi = ? AND s.comune=c.idcomune";
+                        try (PreparedStatement ps1 = db0.getConnection().prepareStatement(sql1)) {
+                            ps1.setString(1, rs.getString("p.sedefisica"));
+                            try (ResultSet rs1 = ps1.executeQuery()) {
+                                if (rs1.next()) {
+                                    SEDE = rs1.getString(1) + " - " + rs1.getString(2) + " (" + rs1.getString(3) + ")";
+                                }
                             }
                         }
                     }
@@ -213,75 +216,81 @@ public class Pdf {
             String sql0 = "SELECT a.idsoggetto_attuatore,a.codicefiscale,a.nome,a.cognome,c.nome,c.cod_provincia,a.datanascita,s.ragionesociale,p.sedefisica,p.cip,a.data_inizio_UD11,a.data_fine_UD11,p.start,p.end "
                     + "FROM allievi a, soggetti_attuatori s, progetti_formativi p , comuni c "
                     + "WHERE a.idsoggetto_attuatore=s.idsoggetti_attuatori AND a.idprogetti_formativi=p.idprogetti_formativi AND a.comune_nascita=c.idcomune "
-                    + "AND a.idallievi=" + idallievo;
-
-            try (Statement st = db0.getConnection().createStatement(); ResultSet rs = st.executeQuery(sql0)) {
-                if (rs.next()) {
-                    idsa = rs.getString("a.idsoggetto_attuatore");
-                    codicefiscale = rs.getString("a.codicefiscale").toUpperCase();
-                    nome = rs.getString("a.nome");
-                    cognome = rs.getString("a.cognome");
-                    nascita_data = new DateTime(rs.getDate("a.datanascita").getTime()).toString(patternITA);
-                    nascita_comune = rs.getString("c.nome");
-                    nascita_provincia = rs.getString("c.cod_provincia");
-                    NOMESA = rs.getString("s.ragionesociale");
-                    if (rs.getString("p.sedefisica") != null) {
-                        String sql1 = "SELECT s.indirizzo,c.nome,c.cod_provincia FROM sedi_formazione s, comuni c WHERE s.idsedi=" + rs.getString("p.sedefisica") + " AND s.comune=c.idcomune";
-                        try (Statement st1 = db0.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
-                            if (rs1.next()) {
-                                SEDE = rs1.getString(1) + " - " + rs1.getString(2) + " (" + rs1.getString(3) + ")";
+                    + "AND a.idallievi = ?";
+            try (PreparedStatement ps = db0.getConnection().prepareStatement(sql0)) {
+                ps.setLong(1, idallievo);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        idsa = rs.getString("a.idsoggetto_attuatore");
+                        codicefiscale = rs.getString("a.codicefiscale").toUpperCase();
+                        nome = rs.getString("a.nome");
+                        cognome = rs.getString("a.cognome");
+                        nascita_data = new DateTime(rs.getDate("a.datanascita").getTime()).toString(patternITA);
+                        nascita_comune = rs.getString("c.nome");
+                        nascita_provincia = rs.getString("c.cod_provincia");
+                        NOMESA = rs.getString("s.ragionesociale");
+                        if (rs.getString("p.sedefisica") != null) {
+                            String sql1 = "SELECT s.indirizzo,c.nome,c.cod_provincia FROM sedi_formazione s, comuni c "
+                                    + "WHERE s.idsedi = ? AND s.comune=c.idcomune";
+                            try (PreparedStatement ps1 = db0.getConnection().prepareStatement(sql1);) {
+                                ps1.setString(1, rs.getString("p.sedefisica"));
+                                try (ResultSet rs1 = ps1.executeQuery()) {
+                                    if (rs1.next()) {
+                                        SEDE = rs1.getString(1) + " - " + rs1.getString(2) + " (" + rs1.getString(3) + ")";
+                                    }
+                                }
                             }
                         }
-                    }
-                    CIP = rs.getString("p.cip");
+                        CIP = rs.getString("p.cip");
 
-                    DATAINIZIO = new DateTime(rs.getDate("p.start").getTime()).toString(patternITA);
-                    DATAFINE = new DateTime(rs.getDate("p.end").getTime()).toString(patternITA);
-                    DATA = new DateTime(rs.getDate("a.data_fine_UD11").getTime()).toString(patternITA);
+                        DATAINIZIO = new DateTime(rs.getDate("p.start").getTime()).toString(patternITA);
+                        DATAFINE = new DateTime(rs.getDate("p.end").getTime()).toString(patternITA);
+                        DATA = new DateTime(rs.getDate("a.data_fine_UD11").getTime()).toString(patternITA);
 
-                    String contentb64 = db0.getTipoDocAllievi("24"); // template
+                        String contentb64 = db0.getTipoDocAllievi("24"); // template
 
-                    String path = db0.getPath("pathDocSA_Allievi")
-                            .replace("@rssa", idsa + "")
-                            .replace("@folder", codicefiscale);
-                    createDir(path);
-                    File pdfOut = new File(path + "Attestato_CompetenzeDigitali_M7C" + "_" + dataconsegna.toString("ddMMyyyyHHmmSSS") + ".pdf");
+                        String path = db0.getPath("pathDocSA_Allievi")
+                                .replace("@rssa", idsa + "")
+                                .replace("@folder", codicefiscale);
+                        createDir(path);
+                        File pdfOut = new File(path + "Attestato_CompetenzeDigitali_M7C" + "_" + dataconsegna.toString("ddMMyyyyHHmmSSS") + ".pdf");
 
-                    try (InputStream is = new ByteArrayInputStream(decodeBase64(contentb64)); PdfReader reader = new PdfReader(is); PdfWriter writer = new PdfWriter(pdfOut); PdfDocument pdfDoc = new PdfDocument(reader, writer)) {
-                        PdfAcroForm form = getAcroForm(pdfDoc, true);
-                        form.setGenerateAppearance(true);
-                        Map<String, PdfFormField> fields = form.getAllFormFields();
+                        try (InputStream is = new ByteArrayInputStream(decodeBase64(contentb64)); PdfReader reader = new PdfReader(is); PdfWriter writer = new PdfWriter(pdfOut); PdfDocument pdfDoc = new PdfDocument(reader, writer)) {
+                            PdfAcroForm form = getAcroForm(pdfDoc, true);
+                            form.setGenerateAppearance(true);
+                            Map<String, PdfFormField> fields = form.getAllFormFields();
 
-                        setFieldsValue(form, fields, "nome", nome.toUpperCase());
-                        setFieldsValue(form, fields, "cognome", cognome.toUpperCase());
-                        setFieldsValue(form, fields, "nascita_comune", nascita_comune.toUpperCase());
-                        setFieldsValue(form, fields, "nascita_provincia", nascita_provincia.toUpperCase());
-                        setFieldsValue(form, fields, "nascita_data", nascita_data);
-                        setFieldsValue(form, fields, "NOMESA", NOMESA.toUpperCase());
-                        setFieldsValue(form, fields, "SEDE", SEDE.toUpperCase());
-                        setFieldsValue(form, fields, "CIP", CIP.toUpperCase());
-                        setFieldsValue(form, fields, "DATA", DATA);
-                        setFieldsValue(form, fields, "DATAINIZIO", DATAINIZIO);
-                        setFieldsValue(form, fields, "DATAFINE", DATAFINE);
-                        setFieldsValue(form, fields, "A_UD11_MOD", A_UD11_MOD);
+                            setFieldsValue(form, fields, "nome", nome.toUpperCase());
+                            setFieldsValue(form, fields, "cognome", cognome.toUpperCase());
+                            setFieldsValue(form, fields, "nascita_comune", nascita_comune.toUpperCase());
+                            setFieldsValue(form, fields, "nascita_provincia", nascita_provincia.toUpperCase());
+                            setFieldsValue(form, fields, "nascita_data", nascita_data);
+                            setFieldsValue(form, fields, "NOMESA", NOMESA.toUpperCase());
+                            setFieldsValue(form, fields, "SEDE", SEDE.toUpperCase());
+                            setFieldsValue(form, fields, "CIP", CIP.toUpperCase());
+                            setFieldsValue(form, fields, "DATA", DATA);
+                            setFieldsValue(form, fields, "DATAINIZIO", DATAINIZIO);
+                            setFieldsValue(form, fields, "DATAFINE", DATAFINE);
+                            setFieldsValue(form, fields, "A_UD11_MOD", A_UD11_MOD);
 
-                        fields.forEach((KEY, VALUE) -> {
-                            form.partialFormFlattening(KEY);
-                        });
-                        if (flatten) {
-                            form.flattenFields();
-                            form.flush();
+                            fields.forEach((KEY, VALUE) -> {
+                                form.partialFormFlattening(KEY);
+                            });
+                            if (flatten) {
+                                form.flattenFields();
+                                form.flush();
+                            }
+
+                            BarcodeQRCode barcode = new BarcodeQRCode("MODELLO7C / "
+                                    + StringUtils.deleteWhitespace(cognome + "_" + nome)
+                                    + " / " + dataconsegna.toString("ddMMyyyyHHmmSSS"));
+                            printbarcode(barcode, pdfDoc);
+                        }
+                        if (checkPDF(pdfOut)) {
+                            return pdfOut;
                         }
 
-                        BarcodeQRCode barcode = new BarcodeQRCode("MODELLO7C / "
-                                + StringUtils.deleteWhitespace(cognome + "_" + nome)
-                                + " / " + dataconsegna.toString("ddMMyyyyHHmmSSS"));
-                        printbarcode(barcode, pdfDoc);
                     }
-                    if (checkPDF(pdfOut)) {
-                        return pdfOut;
-                    }
-
                 }
             } catch (Exception ex1) {
                 log.severe(estraiEccezione(ex1));
@@ -320,106 +329,116 @@ public class Pdf {
             String sql0 = "SELECT a.idsoggetto_attuatore,a.codicefiscale,a.nome,a.cognome,c.nome,c.cod_provincia,a.datanascita,s.ragionesociale,p.sedefisica,p.cip,a.data_inizio_UD11,a.data_fine_UD11,p.start,p.end "
                     + "FROM allievi a, soggetti_attuatori s, progetti_formativi p , comuni c "
                     + "WHERE a.idsoggetto_attuatore=s.idsoggetti_attuatori AND a.idprogetti_formativi=p.idprogetti_formativi AND a.comune_nascita=c.idcomune "
-                    + "AND a.idallievi=" + idallievo;
+                    + "AND a.idallievi = ?";
 
-            try (Statement st = db0.getConnection().createStatement(); ResultSet rs = st.executeQuery(sql0)) {
-                if (rs.next()) {
-                    idsa = rs.getString("a.idsoggetto_attuatore");
-                    codicefiscale = rs.getString("a.codicefiscale").toUpperCase();
-                    nome = rs.getString("a.nome");
-                    cognome = rs.getString("a.cognome");
-                    nascita_data = new DateTime(rs.getDate("a.datanascita").getTime()).toString(patternITA);
-                    nascita_comune = rs.getString("c.nome");
-                    nascita_provincia = rs.getString("c.cod_provincia");
-                    NOMESA = rs.getString("s.ragionesociale");
-                    if (rs.getString("p.sedefisica") != null) {
-                        String sql1 = "SELECT s.indirizzo,c.nome,c.cod_provincia FROM sedi_formazione s, comuni c WHERE s.idsedi=" + rs.getString("p.sedefisica") + " AND s.comune=c.idcomune";
-                        try (Statement st1 = db0.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql1)) {
-                            if (rs1.next()) {
-                                SEDE = rs1.getString(1) + " - " + rs1.getString(2) + " (" + rs1.getString(3) + ")";
+            try (PreparedStatement ps = db0.getConnection().prepareStatement(sql0)) {
+                ps.setLong(1, idallievo);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        idsa = rs.getString("a.idsoggetto_attuatore");
+                        codicefiscale = rs.getString("a.codicefiscale").toUpperCase();
+                        nome = rs.getString("a.nome");
+                        cognome = rs.getString("a.cognome");
+                        nascita_data = new DateTime(rs.getDate("a.datanascita").getTime()).toString(patternITA);
+                        nascita_comune = rs.getString("c.nome");
+                        nascita_provincia = rs.getString("c.cod_provincia");
+                        NOMESA = rs.getString("s.ragionesociale");
+                        if (rs.getString("p.sedefisica") != null) {
+                            String sql1 = "SELECT s.indirizzo,c.nome,c.cod_provincia FROM sedi_formazione s, comuni c WHERE s.idsedi = ? AND s.comune=c.idcomune";
+                            try (PreparedStatement ps1 = db0.getConnection().prepareStatement(sql1);) {
+                                ps1.setString(1, rs.getString("p.sedefisica"));
+                                try (ResultSet rs1 = ps1.executeQuery()) {
+                                    if (rs1.next()) {
+                                        SEDE = rs1.getString(1) + " - " + rs1.getString(2) + " (" + rs1.getString(3) + ")";
+                                    }
+                                }
                             }
                         }
-                    }
-                    CIP = rs.getString("p.cip");
+                        CIP = rs.getString("p.cip");
 
-                    DATAINIZIO = new DateTime(rs.getDate("p.start").getTime()).toString(patternITA);
-                    DATAFINE = new DateTime(rs.getDate("p.end").getTime()).toString(patternITA);
-                    DATA = new DateTime().toString(patternITA);
+                        DATAINIZIO = new DateTime(rs.getDate("p.start").getTime()).toString(patternITA);
+                        DATAFINE = new DateTime(rs.getDate("p.end").getTime()).toString(patternITA);
+                        DATA = new DateTime().toString(patternITA);
 
-                    String contentb64 = db0.getTipoDocAllievi("23"); // template
+                        String contentb64 = db0.getTipoDocAllievi("23"); // template
 
-                    String path = db0.getPath("pathDocSA_Allievi")
-                            .replace("@rssa", idsa + "")
-                            .replace("@folder", codicefiscale);
-                    createDir(path);
-                    File pdfOut = new File(path + "Attestato_UD_M7B" + "_" + dataconsegna.toString("ddMMyyyyHHmmSSS") + ".pdf");
+                        String path = db0.getPath("pathDocSA_Allievi")
+                                .replace("@rssa", idsa + "")
+                                .replace("@folder", codicefiscale);
+                        createDir(path);
+                        File pdfOut = new File(path + "Attestato_UD_M7B" + "_" + dataconsegna.toString("ddMMyyyyHHmmSSS") + ".pdf");
 
-                    try (InputStream is = new ByteArrayInputStream(decodeBase64(contentb64)); PdfReader reader = new PdfReader(is); PdfWriter writer = new PdfWriter(pdfOut); PdfDocument pdfDoc = new PdfDocument(reader, writer)) {
-                        PdfAcroForm form = getAcroForm(pdfDoc, true);
-                        form.setGenerateAppearance(true);
-                        Map<String, PdfFormField> fields = form.getAllFormFields();
+                        try (InputStream is = new ByteArrayInputStream(decodeBase64(contentb64)); PdfReader reader = new PdfReader(is); PdfWriter writer = new PdfWriter(pdfOut); PdfDocument pdfDoc = new PdfDocument(reader, writer)) {
+                            PdfAcroForm form = getAcroForm(pdfDoc, true);
+                            form.setGenerateAppearance(true);
+                            Map<String, PdfFormField> fields = form.getAllFormFields();
 
-                        setFieldsValue(form, fields, "nome", nome.toUpperCase());
-                        setFieldsValue(form, fields, "cognome", cognome.toUpperCase());
-                        setFieldsValue(form, fields, "nascita_comune", nascita_comune.toUpperCase());
-                        setFieldsValue(form, fields, "nascita_provincia", nascita_provincia.toUpperCase());
-                        setFieldsValue(form, fields, "nascita_data", nascita_data);
-                        setFieldsValue(form, fields, "NOMESA", NOMESA.toUpperCase());
-                        setFieldsValue(form, fields, "SEDE", SEDE.toUpperCase());
-                        setFieldsValue(form, fields, "CIP", CIP.toUpperCase());
-                        setFieldsValue(form, fields, "DATA", DATA);
-                        setFieldsValue(form, fields, "DATAINIZIO", DATAINIZIO);
-                        setFieldsValue(form, fields, "DATAFINE", DATAFINE);
+                            setFieldsValue(form, fields, "nome", nome.toUpperCase());
+                            setFieldsValue(form, fields, "cognome", cognome.toUpperCase());
+                            setFieldsValue(form, fields, "nascita_comune", nascita_comune.toUpperCase());
+                            setFieldsValue(form, fields, "nascita_provincia", nascita_provincia.toUpperCase());
+                            setFieldsValue(form, fields, "nascita_data", nascita_data);
+                            setFieldsValue(form, fields, "NOMESA", NOMESA.toUpperCase());
+                            setFieldsValue(form, fields, "SEDE", SEDE.toUpperCase());
+                            setFieldsValue(form, fields, "CIP", CIP.toUpperCase());
+                            setFieldsValue(form, fields, "DATA", DATA);
+                            setFieldsValue(form, fields, "DATAINIZIO", DATAINIZIO);
+                            setFieldsValue(form, fields, "DATAFINE", DATAFINE);
 
-                        //UD A
-                        PdfWidgetAnnotation widgetAnnotation = fields.get("A_UD").getWidgets().get(0);
-                        PdfArray annotationRect = widgetAnnotation.getRectangle();
-                        List<Paragraph> list_pA = print(li_A, tipoud, true);
-                        PdfPage page = pdfDoc.getPage(2);
-                        try (Canvas canvas = new Canvas(new PdfCanvas(page), widgetAnnotation.getRectangle().toRectangle())) {
-                            int index = 1;
-                            for (Paragraph p1 : list_pA) {
-                                float xCoord = annotationRect.getAsNumber(0).floatValue();
-                                float yCoord = annotationRect.getAsNumber(3).floatValue() - (18 * index);
-                                canvas.showTextAligned(p1, xCoord, yCoord, TextAlignment.LEFT);
-                                index++;
+                            //UD A
+                            PdfWidgetAnnotation widgetAnnotation = fields.get("A_UD").getWidgets().get(0);
+                            PdfArray annotationRect = widgetAnnotation.getRectangle();
+                            List<Paragraph> list_pA = print(li_A, tipoud, true);
+                            PdfPage page = pdfDoc.getPage(2);
+                            try (Canvas canvas = new Canvas(new PdfCanvas(page), widgetAnnotation.getRectangle().toRectangle())) {
+                                int index = 1;
+                                for (Paragraph p1 : list_pA) {
+                                    float xCoord = annotationRect.getAsNumber(0).floatValue();
+                                    float yCoord = annotationRect.getAsNumber(3).floatValue() - (18 * index);
+                                    canvas.showTextAligned(p1, xCoord, yCoord, TextAlignment.LEFT);
+                                    index++;
+                                }
                             }
-                        }
 
-                        //UD B
-                        PdfWidgetAnnotation widgetAnnotation1 = fields.get("B_UD").getWidgets().get(0);
-                        PdfArray annotationRect1 = widgetAnnotation1.getRectangle();
-                        List<Paragraph> list_pB = print(li_B, tipoud, false);
-                        try (Canvas canvas = new Canvas(new PdfCanvas(page), widgetAnnotation1.getRectangle().toRectangle())) {
-                            int index = 1;
-                            for (Paragraph p1 : list_pB) {
-                                float xCoord = annotationRect1.getAsNumber(0).floatValue();
-                                float yCoord = annotationRect1.getAsNumber(3).floatValue() - (18 * index);
-                                canvas.showTextAligned(p1, xCoord, yCoord, TextAlignment.LEFT);
-                                index++;
+                            //UD B
+                            PdfWidgetAnnotation widgetAnnotation1 = fields.get("B_UD").getWidgets().get(0);
+                            PdfArray annotationRect1 = widgetAnnotation1.getRectangle();
+                            List<Paragraph> list_pB = print(li_B, tipoud, false);
+                            try (Canvas canvas = new Canvas(new PdfCanvas(page), widgetAnnotation1.getRectangle().toRectangle())) {
+                                int index = 1;
+                                for (Paragraph p1 : list_pB) {
+                                    float xCoord = annotationRect1.getAsNumber(0).floatValue();
+                                    System.out.println("rc.soop.gestione.Pdf.MODELLO7_UD_BASE() "+xCoord);
+                                    float yCoord = annotationRect1.getAsNumber(3).floatValue() - (27 * index);
+                                    System.out.println("rc.soop.gestione.Pdf.MODELLO7_UD_BASE() "+yCoord);
+                                    System.out.println("rc.soop.gestione.Pdf.MODELLO7_UD_BASE() "+p1.toString());
+
+                                    canvas.showTextAligned(p1, xCoord, yCoord, TextAlignment.LEFT);
+                                    index++;
+                                }
                             }
+
+                            fields.forEach((KEY, VALUE) -> {
+                                form.partialFormFlattening(KEY);
+                            });
+
+                            if (flatten) {
+                                form.flattenFields();
+                                form.flush();
+                            }
+                            BarcodeQRCode barcode = new BarcodeQRCode("MODELLO7C / "
+                                    + StringUtils.deleteWhitespace(cognome + "_" + nome)
+                                    + " / " + dataconsegna.toString("ddMMyyyyHHmmSSS"));
+                            printbarcode(barcode, pdfDoc);
+                        }
+                        if (checkPDF(pdfOut)) {
+                            return pdfOut;
                         }
 
-                        fields.forEach((KEY, VALUE) -> {
-                            form.partialFormFlattening(KEY);
-                        });
-
-                        if (flatten) {
-                            form.flattenFields();
-                            form.flush();
-                        }
-                        BarcodeQRCode barcode = new BarcodeQRCode("MODELLO7C / "
-                                + StringUtils.deleteWhitespace(cognome + "_" + nome)
-                                + " / " + dataconsegna.toString("ddMMyyyyHHmmSSS"));
-                        printbarcode(barcode, pdfDoc);
                     }
-                    if (checkPDF(pdfOut)) {
-                        return pdfOut;
-                    }
-
+                } catch (Exception ex1) {
+                    log.severe(estraiEccezione(ex1));
                 }
-            } catch (Exception ex1) {
-                log.severe(estraiEccezione(ex1));
             }
 
         } catch (Exception ex) {
@@ -444,7 +463,7 @@ public class Pdf {
                             case "A_UD1" -> {
                                 Paragraph p = new Paragraph();
                                 p.add(new Text("Titolo U.D.: 1 – Contenuti Formativi: ").addStyle(bold));
-                                p.add(new Text("Analisi delle competenze in ingresso e delle soft skills, analisi delle motivazioni del discente e percorso incentivante, motivazione all'imprenditorialità, Piramide di Maslow ed auto-motivazione. ").addStyle(normal));
+                                p.add(new Text("Analisi delle competenze in ingresso e delle soft skills, analisi delle motivazioni del discente e percorso incentivante, motivazione all'imprenditorialità, Piramide di Maslow ed auto-motivazione.").addStyle(normal));
                                 p.add(new Text("Modalità di svolgimento: ").addStyle(bold));
                                 p.add(new Text(valori[0] + " ").addStyle(normal));
                                 p.add(new Text("Durata: ").addStyle(bold));
@@ -461,7 +480,6 @@ public class Pdf {
                                 p.add(new Text("Durata: ").addStyle(bold));
                                 p.add(new Text("5 ore ").addStyle(normal));
                                 p.setWidth(485);
-
                                 ok.add(p);
                             }
                             case "A_UD3" -> {
@@ -501,7 +519,7 @@ public class Pdf {
                             case "A_UD6" -> {
                                 Paragraph p = new Paragraph();
                                 p.add(new Text("Titolo U.D.: 6 – Contenuti Formativi: ").addStyle(bold));
-                                p.add(new Text("L'Analisi S.W.O.T: necessità e utilità di uno strumento di pianificazione strategica. Analisi di casi concreti di successo/insuccesso imprenditoriale. ").addStyle(normal));
+                                p.add(new Text("L'Analisi S.W.O.T: necessità e utilità di uno strumento di pianificazione strategica. Analisi di casi concreti di successo/insuccesso imprenditoriale.").addStyle(normal));
                                 p.add(new Text("Modalità di svolgimento: ").addStyle(bold));
                                 p.add(new Text(valori[0] + " ").addStyle(normal));
                                 p.add(new Text("Durata: ").addStyle(bold));

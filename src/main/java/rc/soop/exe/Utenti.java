@@ -32,6 +32,7 @@ public class Utenti {
 
     
     public Utenti() {
+        
     }
 
     public String getGruppofaseB() {

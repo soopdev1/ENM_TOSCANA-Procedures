@@ -64,7 +64,7 @@ public class DbSSO {
 
     public boolean executequery(String qu1) {
         try {
-            try ( Statement st1 = this.c.createStatement()) {
+            try (Statement st1 = this.c.createStatement()) {
                 st1.executeUpdate(qu1);
                 return true;
             }

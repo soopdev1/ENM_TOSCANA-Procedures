@@ -18,6 +18,8 @@ public class Items {
     
     String fase, data, orainizio, orafine, gruppo;
     
+    String tipo, filename, content;
+    
     public Items(String fase, String data, String orainizio, String orafine, String gruppo) {
         this.fase = fase;
         this.data = data;
@@ -26,6 +28,39 @@ public class Items {
         this.gruppo = gruppo;
     }
 
+    public Items(String tipo, String filename, String content) {
+        this.tipo = tipo;
+        this.filename = filename;
+        this.content = content;
+    }
+    
+    
+
+    public String getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
+    }
+
+    public String getFilename() {
+        return filename;
+    }
+
+    public void setFilename(String filename) {
+        this.filename = filename;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    
     public String getFase() {
         return fase;
     }

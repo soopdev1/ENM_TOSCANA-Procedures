@@ -7,6 +7,7 @@ package rc.soop.arti;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import java.net.URI;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.logging.Level;
@@ -15,6 +16,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import org.apache.commons.lang3.StringUtils;
 import org.dmfs.httpessentials.client.HttpRequestExecutor;
 import org.dmfs.httpessentials.httpurlconnection.HttpUrlConnectionExecutor;
 import org.dmfs.oauth2.client.BasicOAuth2AuthorizationProvider;
@@ -90,12 +92,15 @@ public class Arti {
                     .build();
             MediaType mediaType = MediaType.parse("application/json");
             RequestBody body = RequestBody.create(mediaType, jo.toString());
+
+            String tk = getToken(db0);
             Request request = new Request.Builder()
-                    .url(db0.getPath("arti.link.aggiornastato"))
+                    .url(encodeURIComponent(db0.getPath("arti.link.aggiornastato")))
                     .method("POST", body)
                     .addHeader("Content-Type", "application/json")
-                    .addHeader("Authorization", "Bearer " + getToken(db0))
+                    .addHeader("Authorization", "Bearer " + encodeURIComponent(tk))
                     .build();
+
             Response response = client.newCall(request).execute();
 
             db0.closeDB();
@@ -109,6 +114,18 @@ public class Arti {
             return new ResponseStatoIscrizione("fail", estraiEccezione(ex), codiceAttivita, codiceFiscale);
         }
 
+    }
+
+    private static String encodeURIComponent(String unencoded) {
+        try {
+            String escaped = StringUtils.replace(unencoded, "\\", "\\\\");
+            escaped = StringUtils.replace(escaped, "(\\r|\\n)+", " ");
+            escaped = StringUtils.replace(escaped, "'", "\\'");
+            return escaped;
+        } catch (Exception e) {
+            System.out.println("Error encoding string: '" + unencoded + "': " + e.getMessage());
+            return "";
+        }
     }
 
     public static void cambiostato_allievo(boolean testing) {
@@ -129,14 +146,15 @@ public class Arti {
                 String dataFineCorso = rs1.getString("p.end") + "T00:00:00.000Z";
                 ResponseStatoIscrizione resp = invia(testing, CIP, CF, STATOARTI, STATOARTI, dataInizioCorso, dataFineCorso);
                 if (resp.getStatus().equals("success")) {
-                    String update = "UPDATE allievi SET esito='" + STATOARTI + "' WHERE idallievi = " + rs1.getString("A.idallievi");
-                    try (Statement st2 = db0.getConnection().createStatement()) {
-                        boolean ok = st2.executeUpdate(update) > 0;
+                    String update = "UPDATE allievi SET esito = ? WHERE idallievi = ?";
+                    try (PreparedStatement ps2 = db0.getConnection().prepareStatement(update)) {
+                        ps2.setString(1, STATOARTI);
+                        ps2.setString(2, rs1.getString("a.idallievi"));
+                        boolean ok = ps2.executeUpdate(update) > 0;
                         log.log(Level.INFO, "{0} - {1} ; {2} : {3} = {4}", new Object[]{STATOARTI, CF, CIP, update, ok});
                     }
                 }
             }
-
         } catch (Exception ex) {
             log.severe(estraiEccezione(ex));
         }
@@ -145,14 +163,15 @@ public class Arti {
                 + "AND (a.esito IS NULL OR a.esito NOT IN('AMMESSO_INIZIO_CORSO','AMMESSO_DOPO_INIZIO_CORSO','NON_AMMESSO')) ORDER BY a.codicefiscale";
         try (Statement st1 = db0.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql_NOSTART)) {
             String STATOARTI = "NON_AMMESSO";
-
             while (rs1.next()) {
                 String CF = rs1.getString("a.codicefiscale");
                 ResponseStatoIscrizione resp = invia(testing, null, CF, STATOARTI, STATOARTI, null, null);
                 if (resp.getStatus().equals("success")) {
-                    String update = "UPDATE allievi SET esito='" + STATOARTI + "' WHERE idallievi = " + rs1.getString("a.idallievi");
-                    try (Statement st2 = db0.getConnection().createStatement()) {
-                        boolean ok = st2.executeUpdate(update) > 0;
+                    String update = "UPDATE allievi SET esito = ? WHERE idallievi = ?";
+                    try (PreparedStatement ps2 = db0.getConnection().prepareStatement(update)) {
+                        ps2.setString(1, STATOARTI);
+                        ps2.setString(2, rs1.getString("a.idallievi"));
+                        boolean ok = ps2.executeUpdate(update) > 0;
                         log.log(Level.INFO, "{0} - {1} : {2} = {3}", new Object[]{STATOARTI, CF, update, ok});
                     }
                 }
@@ -177,9 +196,11 @@ public class Arti {
                 String DESCRSTATOARTI = STATOENM.equals("16") ? "ALTRO_COMPROVATO_IMPEDIMENTO_OGGETTIVO_E_O_CAUSA_DI_FORZA_MAGGIORE" : "RIFIUTO_NON_GIUSTIFICATO";
                 ResponseStatoIscrizione resp = invia(testing, CIP, CF, STATOARTI, DESCRSTATOARTI, dataInizioCorso, dataFineCorso);
                 if (resp.getStatus().equals("success")) {
-                    String update = "UPDATE allievi SET esito='" + STATOARTI + "' WHERE idallievi = " + rs1.getString("a.idallievi");
-                    try (Statement st2 = db0.getConnection().createStatement()) {
-                        boolean ok = st2.executeUpdate(update) > 0;
+                    String update = "UPDATE allievi SET esito = ? WHERE idallievi = ?";
+                    try (PreparedStatement ps2 = db0.getConnection().prepareStatement(update)) {
+                        ps2.setString(1, STATOARTI);
+                        ps2.setString(2, rs1.getString("a.idallievi"));
+                        boolean ok = ps2.executeUpdate(update) > 0;
                         log.log(Level.INFO, "{0} - {1} ; {2} : {3} = {4}", new Object[]{STATOARTI, CF, CIP, update, ok});
                     }
                 }
@@ -195,20 +216,21 @@ public class Arti {
                 + "AND a.id_statopartecipazione IN ('18','19') "
                 + "AND (a.esito IS NULL OR a.esito NOT IN('IDONEO','TERMINATO_CON_INSUCCESSO')) "
                 + "ORDER BY a.codicefiscale";
-        try (Statement st1 = db0.getConnection().createStatement(); 
-                ResultSet rs1 = st1.executeQuery(sql_COMPLETATO)) {
+        try (Statement st1 = db0.getConnection().createStatement(); ResultSet rs1 = st1.executeQuery(sql_COMPLETATO)) {
             while (rs1.next()) {
                 String CIP = rs1.getString("p.cip");
                 String dataInizioCorso = rs1.getString("p.start") + "T00:00:00.000Z";
                 String dataFineCorso = rs1.getString("p.end") + "T00:00:00.000Z";
                 String CF = rs1.getString("a.codicefiscale");
                 String STATOENM = rs1.getString("a.id_statopartecipazione");
-                String STATOARTI = STATOENM.equals("18") ? "IDONEO" : "TERMINATO_CON_INSUCCESSO";                
+                String STATOARTI = STATOENM.equals("18") ? "IDONEO" : "TERMINATO_CON_INSUCCESSO";
                 ResponseStatoIscrizione resp = invia(testing, CIP, CF, STATOARTI, STATOARTI, dataInizioCorso, dataFineCorso);
                 if (resp.getStatus().equals("success")) {
-                    String update = "UPDATE allievi SET esito='" + STATOARTI + "' WHERE idallievi = " + rs1.getString("a.idallievi");
-                    try (Statement st2 = db0.getConnection().createStatement()) {
-                        boolean ok = st2.executeUpdate(update) > 0;
+                    String update = "UPDATE allievi SET esito = ? WHERE idallievi = ?";
+                    try (PreparedStatement ps2 = db0.getConnection().prepareStatement(update)) {
+                        ps2.setString(1, STATOARTI);
+                        ps2.setString(2, rs1.getString("a.idallievi"));
+                        boolean ok = ps2.executeUpdate(update) > 0;
                         log.log(Level.INFO, "{0} - {1} ; {2} : {3} = {4}", new Object[]{STATOARTI, CF, CIP, update, ok});
                     }
                 }
